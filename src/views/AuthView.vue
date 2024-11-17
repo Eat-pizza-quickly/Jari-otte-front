@@ -6,6 +6,7 @@
 
 <script setup>
 import AuthPages from '@/components/AuthPages.vue'
+
 </script>
 
 <style scoped>
