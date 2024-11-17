@@ -129,7 +129,7 @@ const handleSendVerification = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #D9A66C;
+  background-color: #ffffff;
   padding: 1rem;
 }
 
