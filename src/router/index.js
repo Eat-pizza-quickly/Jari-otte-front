@@ -65,38 +65,45 @@ const router = createRouter({
 import VueJwtDecode from 'vue-jwt-decode'
 
 router.beforeEach((to, from, next) => {
+  // URL에 token 파라미터가 있는지 확인
+  const tokenFromQuery = to.query.token
+  if (tokenFromQuery) {
+    console.log('Token detected in URL:', tokenFromQuery)
+    localStorage.setItem('token', tokenFromQuery)
+    // token 파라미터를 제거하고 같은 경로로 리다이렉트
+    const query = { ...to.query }
+    delete query.token
+    next({ path: '/', query })
+    return
+  }
+
+  // 인증이 필요한 페이지에 대한 처리
   if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token')
 
     if (token) {
       try {
-        // 토큰 디코딩
-        const decodedToken = VueJwtDecode.decode(token);
+        const decodedToken = VueJwtDecode.decode(token)
+        const currentTime = Math.floor(Date.now() / 1000)
 
-        // 토큰 만료 여부 확인
-        const currentTime = Math.floor(Date.now() / 1000); // 현재 시간(초 단위)
         if (decodedToken.exp && decodedToken.exp < currentTime) {
-          // 토큰이 만료됨
-          localStorage.removeItem('token'); // 만료된 토큰 제거
-          next({ name: 'adminLogin' });
+          localStorage.removeItem('token')
+          next({ name: 'adminLogin' })
         } else if (decodedToken.userRole === 'ADMIN') {
-          // userRole이 ADMIN이면 접근 허용
-          next();
+          next()
         } else {
-          // userRole이 ADMIN이 아님
-          next({ name: 'adminLogin' });
+          next({ name: 'adminLogin' })
         }
       } catch (error) {
-        // 토큰이 유효하지 않음
-        localStorage.removeItem('token'); // 유효하지 않은 토큰 제거
-        next({ name: 'adminLogin' });
+        localStorage.removeItem('token')
+        next({ name: 'adminLogin' })
       }
     } else {
-      // 토큰이 없음
-      next({ name: 'adminLogin' });
+      next({ name: 'adminLogin' })
     }
   } else {
-    next();
+    next()
   }
-});
+})
+
 export default router
