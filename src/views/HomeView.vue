@@ -1,7 +1,10 @@
 <script setup>
+import Header from '@/components/LoginHeader.vue';
 </script>
 
 <template>
-  <main>
-  </main>
+  <div id="app">
+    <Header />
+  </div>
 </template>
+

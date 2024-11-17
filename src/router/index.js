@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import ConcertsView from '../views/ConcertsView.vue'
 import AuthView from '../views/AuthView.vue'
 
 const router = createRouter({
@@ -9,17 +8,14 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
-    },
-    {
-      path: '/concerts',
-      name: 'concerts',
-      component: ConcertsView
+      component: HomeView,
+      meta: { requiresHeader: true }, // 헤더를 포함할 페이지
     },
     {
       path: '/auth',
       name: 'auth',
-      component: AuthView
+      component: AuthView,
+      meta: { requiresHeader: false }, // 헤더를 숨길 페이지
     }
   ]
 })

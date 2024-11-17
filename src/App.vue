@@ -1,18 +1,12 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
+import LoginHeader from '@/components/LoginHeader.vue'
 </script>
 
 <template>
-  <header>
-    <div>
-      <nav>
-        <RouterLink to="/"> </RouterLink>
-        <RouterLink to="/concerts"> </RouterLink>
-      </nav>
-    </div>
-  </header>
-
-  <RouterView />
+  <div id="app">
+    <LoginHeader />
+  </div>
 </template>
 
 <style>
