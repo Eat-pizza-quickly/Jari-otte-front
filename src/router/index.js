@@ -1,9 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import MainPageView from '../views/MainPageView.vue'
 import AuthView from '../views/AuthView.vue'
 import MyPageView from '../views/MyPageView.vue'
 import SeatSelection from '../views/SeatSelection.vue'
-import MainPageView from '@/views/MainPageView.vue'
 import ConcertCreate from "@/views/ConcertCreate.vue";
 import VenueCreate from "@/views/VenueCreate.vue";
 import AdminLogin from "@/views/AdminLogin.vue";
@@ -22,7 +21,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView,
+      component: MainPageView,
       meta: { requiresHeader: true },
     },
     {
@@ -66,12 +65,6 @@ const router = createRouter({
       name: 'adminLogin',
       component: AdminLogin,
       meta: { requiresHeader: false },
-    },
-    {
-      path: '/main',
-      name: 'main',
-      component: MainPageView,
-      meta: { requiresHeader: true },
     }
   ]
 })
