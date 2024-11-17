@@ -71,7 +71,7 @@ const handleLogin = async () => {
       password: password.value,
     })
     localStorage.setItem('token', response.data.data)
-    window.location.href = '/dashboard'
+    window.location.href = '/'
   } catch (err) {
     error.value = err.response?.data?.message || '로그인에 실패했습니다.'
     console.error('Login failed:', err)
