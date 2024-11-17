@@ -1,13 +1,11 @@
-<script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import LoginHeader from '@/components/LoginHeader.vue'
-</script>
-
 <template>
   <div id="app">
-    <LoginHeader />
+
+    <!-- 현재 경로에 따른 컴포넌트를 렌더링 -->
+    <RouterView />
   </div>
 </template>
 
-<style>
-</style>
+<script setup>
+import { RouterView } from 'vue-router';
+</script>
