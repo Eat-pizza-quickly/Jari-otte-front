@@ -1,6 +1,5 @@
 <template>
   <div class="my-page-view">
-    <h1>마이 페이지</h1>
     <MyPage />
   </div>
 </template>
@@ -9,15 +8,10 @@
 import MyPage from '@/components/MyPage.vue'
 </script>
 
-<style>
+<style scoped>
 .my-page-view {
-  padding: 20px;
-}
-
-h1 {
-  font-size: 2rem;
-  color: var(--text-color);
-  margin-bottom: 20px;
-  text-align: center;
+  padding: 0;
+  background-color: #D9A66C;
+  min-height: 100vh;
 }
 </style>

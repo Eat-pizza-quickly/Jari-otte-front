@@ -58,7 +58,7 @@
               <span class="item-date">{{ formatDate(reservation.createdAt) }}</span>
             </div>
             <div class="item-details">
-              <span>좌석: {{ reservation.seatId }}</span>
+              <span>좌석 번호: {{ reservation.seatNumber }}</span>
               <span class="item-price">{{ reservation.price.toLocaleString() }}원</span>
             </div>
           </div>
@@ -181,7 +181,7 @@ const updateUser = async () => {
 
 const fetchCoupons = async () => {
   try {
-    const { data } = await api.get('/coupons/my-coupon');
+    const { data } = await api.get('/users/my-coupon');
     coupons.value = data.data;
   } catch (error) {
     console.error('쿠폰 정보 가져오기 실패:', error);
@@ -194,14 +194,17 @@ const fetchReservations = async () => {
     const { data } = await api.get('/reservations', {
       params: { page: reservationPage.value - 1, size: 4 },
     });
-    const reservationsWithTitles = await Promise.all(data.data.content.map(async (reservation) => {
+    const reservationsWithDetails = await Promise.all(data.data.content.map(async (reservation) => {
       const concertResponse = await api.get(`/concerts/${reservation.concertId}`);
+      const seatResponse = await api.get(`/concerts/${reservation.concertId}/seats`);
+      const seat = seatResponse.data.data.seatDtoList.find(s => s.id === reservation.seatId);
       return {
         ...reservation,
-        concertTitle: concertResponse.data.data.title
+        concertTitle: concertResponse.data.data.title,
+        seatNumber: seat ? seat.seatNumber : 'Unknown'
       };
     }));
-    reservations.value = reservationsWithTitles;
+    reservations.value = reservationsWithDetails;
     reservationTotalPages.value = data.data.totalPages;
   } catch (error) {
     console.error('예약 정보 가져오기 실패:', error);
