@@ -10,7 +10,7 @@
       </section>
       <section v-else class="login-section">
         <p>로그인이 필요합니다.</p>
-        <router-link to="/login" class="login-link">로그인하기</router-link>
+        <router-link to="/auth" class="login-link">로그인하기</router-link>
       </section>
     </main>
   </div>
