@@ -1,7 +1,8 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '../views/HomeView.vue';
-import AuthView from '../views/AuthView.vue';
-import SeatSelection from '../views/SeatSelection.vue'; // SeatSelection 컴포넌트 추가
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
+import AuthView from '../views/AuthView.vue'
+import MyPageView from '../views/MyPageView.vue'
+import SeatSelection from '../views/SeatSelection.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,12 +20,18 @@ const router = createRouter({
       meta: { requiresHeader: false },
     },
     {
-      path: '/seat', // SeatSelection 경로 추가
+      path: '/seat',
       name: 'seatSelection',
       component: SeatSelection,
       meta: { requiresHeader: true },
     },
-  ],
-});
+    {
+      path: '/mypage',
+      name: 'mypage',
+      component: MyPageView,
+      meta: { requiresHeader: true },
+    }
+  ]
+})
 
-export default router;
+export default router

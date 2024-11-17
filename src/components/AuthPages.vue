@@ -44,8 +44,10 @@
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
-const activeTab = ref('signup')
+const router = useRouter()
+const activeTab = ref('login')
 const email = ref('')
 const password = ref('')
 const nickname = ref('')
@@ -71,7 +73,7 @@ const handleLogin = async () => {
       password: password.value,
     })
     localStorage.setItem('token', response.data.data)
-    window.location.href = '/'
+    window.location.href = '/'  // Redirect to home view
   } catch (err) {
     error.value = err.response?.data?.message || '로그인에 실패했습니다.'
     console.error('Login failed:', err)
@@ -120,31 +122,19 @@ const handleSendVerification = async () => {
 }
 </script>
 
+
 <style scoped>
-@import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2110@1.0/Yeogieoddae.woff2') format('woff2');
-
-:root {
-  --bg-color: #FFDCBC;
-  /* other variables remain unchanged */
-}
-
-body.dark-mode {
-  --bg-color: #FFDCBC;
-  /* other variables remain unchanged */
-}
-
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #FFDCBC;
+  background-color: #D9A66C;
   padding: 1rem;
-  font-family: 'Yeogieoddae', sans-serif;
 }
 
 .login-form {
-  background-color: #FFDCBC;
+  background-color: #D9A66C;
   color: #000000;
   border-radius: 8px;
   padding: 2rem;

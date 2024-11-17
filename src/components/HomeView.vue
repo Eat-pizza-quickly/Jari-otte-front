@@ -1,18 +1,8 @@
 <template>
-  <div class="home-view">
-    <header>
-      <h1>JariOtte</h1>
-    </header>
-    <main>
-      <section v-if="username" class="welcome-section">
-        <p>환영합니다, {{ username }}님!</p>
-        <router-link to="/mypage" class="mypage-link">마이페이지로 이동</router-link>
-      </section>
-      <section v-else class="login-section">
-        <p>로그인이 필요합니다.</p>
-        <router-link to="/login" class="login-link">로그인하기</router-link>
-      </section>
-    </main>
+  <div class="HomeView">
+    <h1>JariOtte</h1>
+    <p>환영합니다, {{ username }}님!</p>
+    <router-link to="/mypage" class="mypage-link">마이페이지로 이동</router-link>
   </div>
 </template>
 
@@ -51,67 +41,44 @@ const fetchUserInfo = async () => {
   } catch (error) {
     console.error('Failed to fetch user info:', error)
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token')
-      username.value = ''
+      router.push('/auth')
     }
   }
 }
 
 onMounted(() => {
   const token = localStorage.getItem('token')
-  if (token) {
+  if (!token) {
+    router.push('/auth')
+  } else {
     fetchUserInfo()
   }
 })
 </script>
 
 <style scoped>
-.home-view {
-  max-width: 1200px;
+.dashboard {
+  max-width: 800px;
   margin: 0 auto;
   padding: 20px;
-  font-family: Arial, sans-serif;
-}
-
-header {
-  text-align: center;
-  margin-bottom: 40px;
 }
 
 h1 {
-  font-size: 3rem;
-  color: #3490dc;
+  font-size: 2rem;
   margin-bottom: 20px;
 }
 
-main {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 50vh;
-}
-
-.welcome-section, .login-section {
-  text-align: center;
-}
-
-p {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
-}
-
-.mypage-link, .login-link {
+.mypage-link {
   display: inline-block;
+  margin-top: 20px;
   padding: 10px 20px;
   background-color: #3490dc;
   color: white;
   text-decoration: none;
   border-radius: 5px;
-  font-size: 1rem;
-  transition: background-color 0.3s ease;
 }
 
-.mypage-link:hover, .login-link:hover {
+.mypage-link:hover {
   background-color: #2779bd;
 }
 </style>
