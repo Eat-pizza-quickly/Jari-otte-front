@@ -7,10 +7,17 @@ import ConcertCreate from "@/views/ConcertCreate.vue";
 import VenueCreate from "@/views/VenueCreate.vue";
 import AdminLogin from "@/views/AdminLogin.vue";
 import AdminPage from "@/views/AdminPage.vue";
+import CouponPage from "@/views/CouponPage.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/admin/coupons',
+      name: 'couponPage',
+      component: CouponPage,
+      meta: { requiresAuth: true, requiresAdminHeader: true },
+    },
     {
       path: '/',
       name: 'home',
