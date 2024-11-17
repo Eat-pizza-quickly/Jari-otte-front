@@ -1,52 +1,62 @@
 <template>
-  <div class="login-container">
-    <div class="login-form">
+  <div class="auth-container">
+    <div class="auth-form">
       <h1>환영합니다!</h1>
       <p>Jari-Otte에 로그인하세요</p>
 
-      <div class="tab-container">
-        <button @click="activeTab = 'login'" :class="{ active: activeTab === 'login' }">로그인</button>
-        <button @click="activeTab = 'signup'" :class="{ active: activeTab === 'signup' }">회원가입</button>
+      <div v-if="!isProcessingKakao">
+        <div class="tab-container">
+          <button @click="activeTab = 'login'" :class="{ active: activeTab === 'login' }">로그인</button>
+          <button @click="activeTab = 'signup'" :class="{ active: activeTab === 'signup' }">회원가입</button>
+        </div>
+
+        <div v-if="activeTab === 'login'" class="form-content">
+          <form @submit.prevent="handleLogin">
+            <input v-model="email" type="email" placeholder="이메일" required>
+            <input v-model="password" type="password" placeholder="비밀번호" required>
+            <button type="submit" :disabled="isLoading">{{ isLoading ? '로그인 중...' : '로그인' }}</button>
+          </form>
+        </div>
+
+        <div v-if="activeTab === 'signup'" class="form-content">
+          <form @submit.prevent="handleSignup">
+            <input v-model="email" type="email" placeholder="이메일" required>
+            <div class="verification-container">
+              <input v-model="verificationCode" type="text" placeholder="인증번호" required>
+              <button @click.prevent="handleSendVerification" type="button" :disabled="isLoading || !email">
+                인증번호 전송
+              </button>
+            </div>
+            <input v-model="password" type="password" placeholder="비밀번호" required>
+            <input v-model="nickname" type="text" placeholder="닉네임" required>
+            <button type="submit" :disabled="isLoading">{{ isLoading ? '회원가입 중...' : '회원가입' }}</button>
+          </form>
+        </div>
+
+        <div v-if="error" class="error-message">{{ error }}</div>
+
+        <button @click="handleKakaoLogin" class="kakao-login" :disabled="isLoading">
+          {{ isLoading ? '카카오 로그인 중...' : '카카오 로그인' }}
+        </button>
+
+        <p class="copyright">© {{ new Date().getFullYear() }} Jari-Otte. All Rights Reserved.</p>
       </div>
 
-      <div v-if="activeTab === 'login'" class="form-content">
-        <form @submit.prevent="handleLogin">
-          <input v-model="email" type="email" placeholder="이메일" required>
-          <input v-model="password" type="password" placeholder="비밀번호" required>
-          <button type="submit" :disabled="isLoading">{{ isLoading ? '로그인 중...' : '로그인' }}</button>
-        </form>
+      <div v-else>
+        <p>카카오 로그인 처리 중...</p>
       </div>
-
-      <div v-if="activeTab === 'signup'" class="form-content">
-        <form @submit.prevent="handleSignup">
-          <input v-model="email" type="email" placeholder="이메일" required>
-          <div class="verification-container">
-            <input v-model="verificationCode" type="text" placeholder="인증번호" required>
-            <button @click.prevent="handleSendVerification" type="button" :disabled="isLoading">
-              인증번호 전송
-            </button>
-          </div>
-          <input v-model="password" type="password" placeholder="비밀번호" required>
-          <input v-model="nickname" type="text" placeholder="닉네임" required>
-          <button type="submit" :disabled="isLoading">{{ isLoading ? '회원가입 중...' : '회원가입' }}</button>
-        </form>
-      </div>
-
-      <div v-if="error" class="error-message">{{ error }}</div>
-
-      <button @click="handleKakaoLogin" class="kakao-login">카카오 로그인</button>
-
-      <p class="copyright">© 2024 Jari-Otte. All Rights Reserved.</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
-import { useRouter } from 'vue-router'
 
+const route = useRoute()
 const router = useRouter()
+
 const activeTab = ref('login')
 const email = ref('')
 const password = ref('')
@@ -54,8 +64,11 @@ const nickname = ref('')
 const verificationCode = ref('')
 const isLoading = ref(false)
 const error = ref('')
+const isProcessingKakao = ref(false)
 
 const API_BASE_URL = 'http://localhost:8080/api/v1/users'
+const KAKAO_CLIENT_ID = '8a8997adb373bd809a4e9631152c6d88'
+const KAKAO_REDIRECT_URI = 'http://localhost:8083/api/v1/users/oauth/kakao/callback'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -64,7 +77,23 @@ const api = axios.create({
   },
 })
 
+watch(activeTab, () => {
+  error.value = ''
+})
+
+onMounted(() => {
+  const code = route.query.code
+  if (code) {
+    handleKakaoCallback(code)
+  }
+})
+
 const handleLogin = async () => {
+  if (!email.value || !password.value) {
+    error.value = '이메일과 비밀번호를 입력해주세요.'
+    return
+  }
+
   isLoading.value = true
   error.value = ''
   try {
@@ -73,7 +102,8 @@ const handleLogin = async () => {
       password: password.value,
     })
     localStorage.setItem('token', response.data.data)
-    window.location.href = '/'  // Redirect to home view
+    await fetchUserInfo()
+    await router.push('/')
   } catch (err) {
     error.value = err.response?.data?.message || '로그인에 실패했습니다.'
     console.error('Login failed:', err)
@@ -83,6 +113,11 @@ const handleLogin = async () => {
 }
 
 const handleSignup = async () => {
+  if (!email.value || !password.value || !nickname.value || !verificationCode.value) {
+    error.value = '모든 필드를 입력해주세요.'
+    return
+  }
+
   isLoading.value = true
   error.value = ''
   try {
@@ -104,10 +139,52 @@ const handleSignup = async () => {
 }
 
 const handleKakaoLogin = () => {
-  window.location.href = `${API_BASE_URL}/oauth/kakao`
+  const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}`
+  window.location.href = kakaoAuthUrl
+}
+
+const handleKakaoCallback = async (code) => {
+  isProcessingKakao.value = true
+  error.value = ''
+  try {
+    const response = await api.get('/oauth/kakao/callback', { params: { code } })
+    if (response.data && response.data.status === 'success') {
+      localStorage.setItem('token', response.data.data)
+      await fetchUserInfo()
+      await router.push('/')
+    } else {
+      throw new Error('카카오 로그인 처리 중 오류가 발생했습니다.')
+    }
+  } catch (err) {
+    console.error('카카오 로그인 실패:', err)
+    error.value = '카카오 로그인 처리 중 오류가 발생했습니다. 다시 시도해 주세요.'
+  } finally {
+    isProcessingKakao.value = false
+  }
+}
+
+const fetchUserInfo = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('토큰이 없습니다.')
+
+    const response = await api.get('/user', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    // 여기서 사용자 정보를 상태 관리 라이브러리(예: Pinia)에 저장하거나
+    // 필요한 곳에서 사용할 수 있도록 처리합니다.
+    console.log('사용자 정보:', response.data)
+  } catch (error) {
+    console.error('사용자 정보 가져오기 실패:', error)
+  }
 }
 
 const handleSendVerification = async () => {
+  if (!email.value) {
+    error.value = '이메일을 입력해주세요.'
+    return
+  }
+
   isLoading.value = true
   error.value = ''
   try {
@@ -122,9 +199,8 @@ const handleSendVerification = async () => {
 }
 </script>
 
-
 <style scoped>
-.login-container {
+.auth-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -133,7 +209,7 @@ const handleSendVerification = async () => {
   padding: 1rem;
 }
 
-.login-form {
+.auth-form {
   background-color: #D9A66C;
   color: #000000;
   border-radius: 8px;
@@ -251,7 +327,7 @@ button:disabled {
 }
 
 @media (max-width: 480px) {
-  .login-form {
+  .auth-form {
     padding: 1rem;
   }
 

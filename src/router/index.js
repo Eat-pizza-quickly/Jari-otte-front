@@ -30,8 +30,19 @@ const router = createRouter({
       name: 'mypage',
       component: MyPageView,
       meta: { requiresHeader: true },
-    }
+    },
   ]
+})
+
+// Add a global navigation guard
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!localStorage.getItem('token')
+
+  if (to.matched.some(record => record.meta.requiresAuth) && !isAuthenticated) {
+    next({ name: 'auth' })
+  } else {
+    next()
+  }
 })
 
 export default router
