@@ -51,11 +51,11 @@
 
       <div v-if="activeSection === 'reservations'" class="section">
         <h2>예매 내역</h2>
-        <div class="list-container">
-          <div v-for="reservation in reservations" :key="reservation.concertId" class="list-item">
+        <div v-if="reservations.length > 0" class="list-container">
+          <div v-for="reservation in reservations" :key="reservation.seatId" class="list-item">
             <div class="item-header">
-              <span class="item-title">콘서트 id: {{ reservation.concertid }}</span>
-              <span class="item-date">{{ formatdate(reservation.createdat) }}</span>
+              <span class="item-title">{{ reservation.concertTitle }}</span>
+              <span class="item-date">{{ formatDate(reservation.createdAt) }}</span>
             </div>
             <div class="item-details">
               <span>좌석: {{ reservation.seatId }}</span>
@@ -63,7 +63,8 @@
             </div>
           </div>
         </div>
-        <div class="pagination">
+        <div v-else class="empty-message">예매 내역이 없습니다.</div>
+        <div v-if="reservations.length > 0" class="pagination">
           <button @click="changePage('reservations', -1)" :disabled="reservationPage === 1">이전</button>
           <span>{{ reservationPage }} / {{ reservationTotalPages }}</span>
           <button @click="changePage('reservations', 1)" :disabled="reservationPage === reservationTotalPages">다음</button>
@@ -72,10 +73,10 @@
 
       <div v-if="activeSection === 'payments'" class="section">
         <h2>결제 내역</h2>
-        <div class="list-container">
+        <div v-if="payments.length > 0" class="list-container">
           <div v-for="payment in payments" :key="payment.concertId" class="list-item">
             <div class="item-header">
-              <span class="item-title">콘서트 ID: {{ payment.concertId }}</span>
+              <span class="item-title">{{ payment.concertTitle }}</span>
               <span class="payment-status" :class="payment.payStatus.toLowerCase()">
                 {{ getPaymentStatusText(payment.payStatus) }}
               </span>
@@ -86,7 +87,8 @@
             </div>
           </div>
         </div>
-        <div class="pagination">
+        <div v-else class="empty-message">결제 내역이 없습니다.</div>
+        <div v-if="payments.length > 0" class="pagination">
           <button @click="changePage('payments', -1)" :disabled="paymentPage === 1">이전</button>
           <span>{{ paymentPage }} / {{ paymentTotalPages }}</span>
           <button @click="changePage('payments', 1)" :disabled="paymentPage === paymentTotalPages">다음</button>
@@ -190,10 +192,17 @@ const fetchCoupons = async () => {
 const fetchReservations = async () => {
   try {
     const { data } = await api.get('/reservations', {
-      params: { page: reservationPage.value, size: 4 },
+      params: { page: reservationPage.value - 1, size: 4 },
     });
-    reservations.value = data.data;
-    reservationTotalPages.value = Math.ceil(data.data.length / 4);
+    const reservationsWithTitles = await Promise.all(data.data.content.map(async (reservation) => {
+      const concertResponse = await api.get(`/concerts/${reservation.concertId}`);
+      return {
+        ...reservation,
+        concertTitle: concertResponse.data.data.title
+      };
+    }));
+    reservations.value = reservationsWithTitles;
+    reservationTotalPages.value = data.data.totalPages;
   } catch (error) {
     console.error('예약 정보 가져오기 실패:', error);
     handleApiError(error);
@@ -203,9 +212,16 @@ const fetchReservations = async () => {
 const fetchPayments = async () => {
   try {
     const { data } = await api.get('/payments', {
-      params: { page: paymentPage.value, size: 5 },
+      params: { page: paymentPage.value - 1, size: 5 },
     });
-    payments.value = data.data.content;
+    const paymentsWithTitles = await Promise.all(data.data.content.map(async (payment) => {
+      const concertResponse = await api.get(`/concerts/${payment.concertId}`);
+      return {
+        ...payment,
+        concertTitle: concertResponse.data.data.title
+      };
+    }));
+    payments.value = paymentsWithTitles;
     paymentTotalPages.value = data.data.totalPages;
   } catch (error) {
     console.error('결제 정보 가져오기 실패:', error);
@@ -420,10 +436,6 @@ input {
   color: #dc3545;
 }
 
-.quantity {
-  color: #666;
-}
-
 .list-container {
   display: flex;
   flex-direction: column;
@@ -509,6 +521,12 @@ input {
 
 .pagination button:hover:not(:disabled) {
   background-color: #c08b50;
+}
+
+.empty-message {
+  text-align: center;
+  color: #666;
+  padding: 20px;
 }
 
 @media (max-width: 768px) {
