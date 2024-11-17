@@ -11,7 +11,7 @@
       <input
         type="text"
         class="search-input"
-        placeholder="Search in site"
+        placeholder="뮤지컬, 연극 등을 검색해보세요"
       />
       <button class="search-button">🔍</button>
     </div>
@@ -92,7 +92,7 @@ const handleLoginLogout = () => {
 }
 
 .search-input {
-  width: 300px;
+  width: 480px;
   height: 40px;
   padding: 10px;
   font-size: 16px;
