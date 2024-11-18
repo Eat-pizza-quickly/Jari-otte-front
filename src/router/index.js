@@ -8,6 +8,7 @@ import VenueCreate from "@/views/VenueCreate.vue";
 import AdminLogin from "@/views/AdminLogin.vue";
 import AdminPage from "@/views/AdminPage.vue";
 import CouponPage from "@/views/CouponPage.vue";
+import SearchConcertView from '@/views/SearchConcertView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -65,6 +66,12 @@ const router = createRouter({
       name: 'adminLogin',
       component: AdminLogin,
       meta: { requiresHeader: false },
+    },
+    {
+      path: "/search",
+      name: "searchResults",
+      component: SearchConcertView,
+      meta: { requiresHeader: true }
     }
   ]
 })
