@@ -6,16 +6,6 @@
       <span class="logo-text">Jari-Otte</span>
     </div>
 
-    <!-- 검색창 -->
-    <div class="search-bar">
-      <input
-        type="text"
-        class="search-input"
-        placeholder="뮤지컬, 연극 등을 검색해보세요"
-      />
-      <button class="search-button">🔍</button>
-    </div>
-
     <!-- 사용자 메뉴 -->
     <nav class="user-menu">
       <ul>
@@ -24,8 +14,7 @@
             {{ isLoggedIn ? '로그아웃' : '로그인' }}
           </a>
         </li>
-        <li v-if="isLoggedIn"><a href="#">내 프로필</a></li>
-        <li v-if="isLoggedIn"><a href="#">예매내역</a></li>
+        <li v-if="isLoggedIn"><router-link to="/mypage">내 프로필</router-link></li>
         <li v-if="!isLoggedIn"><a href="#" @click.prevent="handleAdminLogin">관리자 로그인</a></li>
       </ul>
     </nav>
