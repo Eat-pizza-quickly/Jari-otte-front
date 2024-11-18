@@ -10,7 +10,7 @@
         :key="seat.id"
         :seatNumber="seat.seatNumber"
         :isReserved="seat.isReserved"
-        :isSelected="selectedSeats.includes(seat.id)"
+        :isSelected="selectedSeat === seat.id"
         @select="handleSeatSelect(seat)"
       />
     </div>
@@ -20,7 +20,7 @@
       <h2>좌석 예약하기</h2>
       <p>선택한 좌석: <strong>{{ selectedSeatDetails }}</strong></p>
       <p>가격: <strong>{{ totalPrice }}원</strong></p>
-      <button @click="bookSeats" class="reserve-button" :disabled="selectedSeats.length === 0">
+      <button @click="bookSeats" class="reserve-button" :disabled="!selectedSeat">
         예약하기
       </button>
     </div>
@@ -29,13 +29,17 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import Seat from "@/components/Seat.vue";
 import axios from "@/plugins/axios"; // axios를 통해 API 통신
 
+const router = useRouter();
+const route = useRoute();
+
 // 상태 정의
 const seats = ref([]); // 좌석 리스트
-const selectedSeats = ref([]); // 선택된 좌석 ID
-const props = defineProps({ concertId: Number })
+const selectedSeat = ref(null); // 단일 선택된 좌석 ID
+const concertId = route.params.concertId;
 
 // 기본 좌석 가격
 const seatPrice = 10000;
@@ -45,24 +49,21 @@ const isLoading = ref(true);
 
 // 선택한 좌석 상세 정보
 const selectedSeatDetails = computed(() => {
-  return selectedSeats.value
-    .map((seatId) => {
-      const seat = seats.value.find((s) => s.id === seatId);
-      return seat ? `${seat.seatNumber} (ID: ${seat.id})` : "";
-    })
-    .join(", ");
+  if (!selectedSeat.value) return "없음";
+  const seat = seats.value.find((s) => s.id === selectedSeat.value);
+  return seat ? `${seat.seatNumber} (ID: ${seat.id})` : "없음";
 });
 
 // 총 가격 계산
 const totalPrice = computed(() => {
-  return selectedSeats.value.length * seatPrice;
+  return selectedSeat.value ? seatPrice : 0;
 });
 
 // 좌석 데이터 가져오기
 async function fetchSeats() {
   isLoading.value = true;
   try {
-    const response = await axios.get(`/concerts/${props.concertId}/seats`); // 임시 concertId 사용
+    const response = await axios.get(`concerts/${concertId}/seats`);
     if (response.data.status === "success") {
       seats.value = response.data.data.seatDtoList.map((seat) => ({
         id: seat.id,
@@ -81,31 +82,28 @@ async function fetchSeats() {
 
 // 좌석 선택 핸들러
 function handleSeatSelect(seat) {
-  const index = selectedSeats.value.indexOf(seat.id);
-  if (index === -1) {
-    selectedSeats.value.push(seat.id);
+  if (seat.isReserved) return; // 예약된 좌석은 선택 불가
+  if (selectedSeat.value === seat.id) {
+    selectedSeat.value = null; // 동일 좌석 클릭 시 선택 해제
   } else {
-    selectedSeats.value.splice(index, 1);
+    selectedSeat.value = seat.id; // 좌석 선택
   }
 }
 
 // 예약 버튼 클릭 이벤트
 async function bookSeats() {
-  if (selectedSeats.value.length === 0) {
+  if (!selectedSeat.value) {
     alert("좌석을 선택해주세요!");
     return;
   }
 
   try {
-    const promises = selectedSeats.value.map((seatId) =>
-      axios.post(`/concerts/${concertId}/seats/${seatId}`, {
-        price: seatPrice, // 바디에 가격 정보 포함
-      })
-    );
+    await axios.post(`/concerts/${concertId}/seats/${selectedSeat.value}`, {
+      price: seatPrice, // 바디에 가격 정보 포함
+    });
 
-    await Promise.all(promises); // 모든 좌석 예약 요청
     alert("예약이 성공적으로 완료되었습니다!");
-    selectedSeats.value = []; // 선택 초기화
+    selectedSeat.value = null; // 선택 초기화
     fetchSeats(); // 최신 좌석 상태를 가져옵니다.
   } catch (error) {
     alert("예약에 실패했습니다. 다시 시도해주세요.");
@@ -117,6 +115,7 @@ onMounted(() => {
   fetchSeats();
 });
 </script>
+
 
 <style scoped>
 /* 동일한 스타일 유지 */

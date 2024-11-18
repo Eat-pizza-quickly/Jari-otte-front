@@ -1,4 +1,4 @@
-np<script setup>
+<script setup>
 import { useRouter } from 'vue-router'
 import { onMounted, ref } from 'vue'
 import axios from '@/plugins/axios'
@@ -20,7 +20,7 @@ const concertDetail = ref({
 
 const getConcert = () => {
   axios
-    .get(`/api/v1/concerts/${props.concertId}`)
+    .get(`/concerts/${props.concertId}`)
     .then((response) => {
       concertDetail.value = response.data.data
       console.log(concertDetail.value)
@@ -39,6 +39,10 @@ const formatDate = (date) => {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+const goToSeatSelection = () => {
+  router.push(`/concerts/${props.concertId}/seat`)
 }
 
 onMounted(() => {
@@ -68,7 +72,7 @@ onMounted(() => {
         <li><strong>예매 기간:</strong> {{ formatDate(concertDetail.endDate) }}</li>
         <li><strong>남은 좌석:</strong> {{ concertDetail.seatCount }}</li>
       </ul>
-      <button class="btn-reserve">예매하기</button>
+      <button class="btn-reserve" @click="goToSeatSelection">예매하기</button>
     </div>
   </div>
 </template>
