@@ -55,24 +55,6 @@
           </div>
         </div>
 
-        <!-- 슬라이더 섹션 -->
-        <section class="slider">
-          <div class="slider-container" :style="{ transform: `translateX(-${generalCurrentSlide * 100}%)` }">
-            <div v-for="(slide, index) in generalSlides" :key="index" class="slide">
-              {{ slide.content }}
-            </div>
-          </div>
-          <div class="slider-dots">
-    <span
-      v-for="(slide, index) in generalSlides"
-      :key="index"
-      class="dot"
-      :class="{ active: generalCurrentSlide === index }"
-      @click="setGeneralSlide(index)"
-    ></span>
-          </div>
-        </section>
-
         <!-- 인기 순위 -->
         <section class="popular-categories">
           <h2>인기 순위</h2>
@@ -119,13 +101,31 @@
               <div class="category-info">
                 <p>{{ index + 6 }}위</p>
                 <p>타이틀: {{ concert.title || '아직 준비 중' }}</p>
-                <p>시작 날짜: {{ concert.startDate || '아직 준비 중' }}</p>
-                <p>종료 날짜: {{ concert.endDate || '아직 준비 중' }}</p>
+                <p>공연 날짜: {{ concert.performDate || '아직 준비 중' }}</p>
+                <p>예약 시작 날짜: {{ concert.startDate || '아직 준비 중' }}</p>
+                <p>예약 종료 날짜: {{ concert.endDate || '아직 준비 중' }}</p>
               </div>
             </li>
           </ul>
         </section>
 
+        <!-- 슬라이더 섹션 -->
+        <section class="slider">
+          <div class="slider-container" :style="{ transform: `translateX(-${generalCurrentSlide * 100}%)` }">
+            <div v-for="(slide, index) in generalSlides" :key="index" class="slide">
+              {{ slide.content }}
+            </div>
+          </div>
+          <div class="slider-dots">
+            <span
+              v-for="(slide, index) in generalSlides"
+              :key="index"
+              class="dot"
+              :class="{ active: generalCurrentSlide === index }"
+              @click="setGeneralSlide(index)"
+            ></span>
+          </div>
+        </section>
 
         <!-- 추천 공연 섹션 -->
         <section class="recommended-events">
@@ -422,13 +422,17 @@ onUnmounted(() => {
 
 /* 사이드바 스타일 */
 .sidebar {
-  width: 220px;
+  position: fixed;
+  right: 30px;
+  top: 25%;
+  width: 170px;
   background-color: #D9A66C;
   padding: 20px;
 }
 
 .sidebar ul {
   list-style-type: none;
+  text-align: center;
   padding: 0;
 }
 
@@ -445,7 +449,7 @@ onUnmounted(() => {
 /* 메인 콘텐츠 스타일 */
 .main-content {
   flex: 1;
-  padding: 30px;
+  padding: 30px 230px;
   background-color: #ffffff;
 }
 
@@ -569,7 +573,7 @@ onUnmounted(() => {
 
 /* 슬라이더 스타일 */
 .slider {
-  margin: 20px 0;
+  margin: 0 0 60px 0;
   position: relative;
   overflow: hidden;
 }
@@ -613,7 +617,8 @@ onUnmounted(() => {
 .popular-categories h2 {
   text-align: center; /* 텍스트 중앙 정렬 */
   font-size: 24px; /* 폰트 크기 */
-  margin-bottom: 20px; /* 하단 여백 */
+  margin-top: 30px; /* 상단 여백 */
+  margin-bottom: 15px; /* 하단 여백 */
   font-weight: bold; /* 텍스트 굵게 */
 }
 
@@ -629,7 +634,7 @@ onUnmounted(() => {
 .slider-wrapper {
   position: relative;
   overflow: hidden;
-  width: 100%;
+  width: 35%;
   max-width: 1400px; /* 슬라이더 최대 너비 */
   margin: 0 auto; /* 중앙 정렬 */
 }
@@ -668,8 +673,8 @@ onUnmounted(() => {
 
 /* 큰 포스터 스타일 */
 .poster {
-  width: 500px;
-  height: 750px;
+  width: 400px;
+  height: 550px;
   background-color: #f0f0f0;
   margin-bottom: 20px;
   display: flex;
@@ -689,8 +694,7 @@ onUnmounted(() => {
 /* 버튼 */
 .slider-button {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 36%;
   background: white;
   border: none;
   font-size: 24px;
@@ -713,7 +717,7 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap; /* 화면 크기에 따라 줄바꿈 */
   justify-content: center; /* 중앙 정렬 */
-  gap: 50px; /* 포스터 간 간격 */
+  gap: 0px; /* 포스터 간 간격 */
   padding: 20px 0;
   margin-top: 40px; /* 상단과 간격 증가 */
 }
@@ -754,7 +758,7 @@ onUnmounted(() => {
 
 /* 슬라이더와 하단 간격 */
 .popular-categories {
-  margin-bottom: 50px; /* 슬라이더와 하단 목록 간격 */
+  margin-bottom: 20px; /* 슬라이더와 하단 목록 간격 */
 }
 
 /* 하단 순위와 푸터 사이 간격 */

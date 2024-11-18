@@ -55,19 +55,6 @@
           </div>
         </div>
 
-        <!-- 슬라이더 섹션 -->
-        <section class="slider">
-          <div class="slider-container" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
-            <div v-for="(slide, index) in slides" :key="index" class="slide">
-              {{ slide.content }}
-            </div>
-          </div>
-          <div class="slider-dots">
-            <span v-for="(slide, index) in slides" :key="index" class="dot" :class="{ active: currentSlide === index }"
-                  @click="setSlide(index)"></span>
-          </div>
-        </section>
-
         <!-- 검색 결과 -->
         <section class="search-results" v-if="searchResults && searchResults.length > 0">
           <h2>검색 결과</h2>
@@ -97,6 +84,19 @@
 
       </main>
     </div>
+
+    <!-- 슬라이더 섹션 -->
+    <section class="slider">
+      <div class="slider-container" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
+        <div v-for="(slide, index) in slides" :key="index" class="slide">
+          {{ slide.content }}
+        </div>
+      </div>
+      <div class="slider-dots">
+            <span v-for="(slide, index) in slides" :key="index" class="dot" :class="{ active: currentSlide === index }"
+                  @click="setSlide(index)"></span>
+      </div>
+    </section>
 
     <!-- 푸터 -->
     <footer class="footer">
@@ -302,13 +302,17 @@ onUnmounted(() => {
 
 /* 사이드바 스타일 */
 .sidebar {
-  width: 220px;
+  position: fixed;
+  right: 30px;
+  top: 25%;
+  width: 170px;
   background-color: #D9A66C;
   padding: 20px;
 }
 
 .sidebar ul {
   list-style-type: none;
+  text-align: center;
   padding: 0;
 }
 
