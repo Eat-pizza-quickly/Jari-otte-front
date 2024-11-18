@@ -3,13 +3,6 @@ import MainPageView from '../views/MainPageView.vue'
 import AuthView from '../views/AuthView.vue'
 import MyPageView from '../views/MyPageView.vue'
 import SeatSelection from '../views/SeatSelection.vue'
-import ConcertCreate from "@/views/ConcertCreate.vue";
-import VenueCreate from "@/views/VenueCreate.vue";
-import AdminLogin from "@/views/AdminLogin.vue";
-import AdminPage from "@/views/AdminPage.vue";
-import CouponPage from "@/views/CouponPage.vue";
-import ConcertDetailView from '@/views/ConcertDetailView.vue'
-import ConcertsView from '@/views/ConcertsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -61,6 +54,12 @@ const router = createRouter({
       name: 'mypage',
       component: MyPageView,
       meta: { requiresHeader: true },
+      path: '/concerts/:concertId',
+      name: 'concert',
+      component: ConcertDetailView,
+      props: true,
+    },
+    {
     },
     {
       path: '/admin/login',
