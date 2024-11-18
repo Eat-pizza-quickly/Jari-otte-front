@@ -8,6 +8,8 @@ import VenueCreate from "@/views/VenueCreate.vue";
 import AdminLogin from "@/views/AdminLogin.vue";
 import AdminPage from "@/views/AdminPage.vue";
 import CouponPage from "@/views/CouponPage.vue";
+import ConcertDetailView from '@/views/ConcertDetailView.vue'
+import ConcertsView from '@/views/ConcertsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
