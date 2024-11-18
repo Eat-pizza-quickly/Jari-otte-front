@@ -3,12 +3,6 @@ import MainPageView from '../views/MainPageView.vue'
 import AuthView from '../views/AuthView.vue'
 import MyPageView from '../views/MyPageView.vue'
 import SeatSelection from '../views/SeatSelection.vue'
-import CouponPage from "@/views/CouponPage.vue";
-import ConcertCreate from "@/views/ConcertCreate.vue";
-import VenueCreate from "@/views/VenueCreate.vue";
-import AdminPage from "@/views/AdminPage.vue";
-import ConcertDetailView from "@/views/ConcertDetailView.vue";
-import AdminLogin from "@/views/AdminLogin.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,66 +11,79 @@ const router = createRouter({
       path: '/admin/coupons',
       name: 'couponPage',
       component: CouponPage,
-      meta: { requiresAuth: true, requiresAdminHeader: true },
+      meta: { requiresAuth: true, requiresAdminHeader: true }
     },
     {
       path: '/',
       name: 'home',
       component: MainPageView,
-      meta: { requiresHeader: true },
+      meta: { requiresHeader: true }
     },
     {
       path: '/auth',
       name: 'auth',
       component: AuthView,
-      meta: { requiresHeader: false },
+      meta: { requiresHeader: false }
     },
     {
       path: '/concert-create',
       name: 'concertCreate',
       component: ConcertCreate,
-      meta: { requiresHeader: true, requiresAuth: true },
+      meta: { requiresHeader: true, requiresAuth: true }
     },
     {
       path: '/venue-create',
       name: 'venueCreate',
       component: VenueCreate,
-      meta: { requiresHeader: true, requiresAuth: true },
+      meta: { requiresHeader: true, requiresAuth: true }
     },
     {
       path: '/admin',
       name: 'adminPage',
       component: AdminPage,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true }
     },
     {
       path: '/concerts/:concertId/seat',
       name: 'seatSelection',
       component: SeatSelection,
-      meta: { requiresHeader: true },
+      meta: { requiresHeader: true }
     },
     {
       path: '/mypage',
       name: 'mypage',
       component: MyPageView,
-      meta: {requiresHeader: true},
+      meta: { requiresHeader: true }
     },
     {
       path: '/concerts/:concertId',
       name: 'concert',
       component: ConcertDetailView,
-      props: true,
+      props: true
     },
     {
       path: '/admin/login',
       name: 'adminLogin',
       component: AdminLogin,
       meta: { requiresHeader: false },
+    },
+    {
+      path: "/search",
+      name: "searchResults",
+      component: SearchConcertView,
+      meta: { requiresHeader: true }
     }
   ]
 })
 
 import VueJwtDecode from 'vue-jwt-decode'
+import CouponPage from '@/views/CouponPage.vue'
+import ConcertCreate from '@/views/ConcertCreate.vue'
+import VenueCreate from '@/views/VenueCreate.vue'
+import AdminPage from '@/views/AdminPage.vue'
+import ConcertDetailView from '@/views/ConcertDetailView.vue'
+import AdminLogin from '@/views/AdminLogin.vue'
+import SearchConcertView from "@/views/SearchConcertView.vue";
 
 router.beforeEach((to, from, next) => {
   // URL에 token 파라미터가 있는지 확인
