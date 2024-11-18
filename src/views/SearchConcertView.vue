@@ -72,7 +72,12 @@
         <section class="search-results" v-if="searchResults && searchResults.length > 0">
           <h2>검색 결과</h2>
           <div class="result-grid">
-            <div v-for="result in searchResults" :key="result.concertId" class="result-item">
+            <div
+              v-for="result in searchResults"
+              :key="result.concertId"
+              class="result-item"
+              @click="goToConcertDetail(result.concertId)"
+            >
               <div class="poster">
                 <img v-if="result.thumbnailUrl" :src="result.thumbnailUrl" alt="포스터" />
                 <div v-else class="poster-placeholder">포스터 준비 중</div>
@@ -80,8 +85,8 @@
               <div class="info">
                 <p class="title">{{ result.title || '타이틀: 아직 준비 중' }}</p>
                 <p class="perform-date">공연 날짜: {{ result.performDate || '아직 준비 중' }}</p>
-                <p class="start-date">시작일: {{ result.startDate || '아직 준비 중' }}</p>
-                <p class="end-date">종료일: {{ result.endDate || '아직 준비 중' }}</p>
+                <p class="start-date">예약 시작일: {{ result.startDate || '아직 준비 중' }}</p>
+                <p class="end-date">예약 종료일: {{ result.endDate || '아직 준비 중' }}</p>
               </div>
             </div>
           </div>
@@ -200,6 +205,7 @@ const categories = ref(['콘서트', '전시/행사', '연극', 'ESPORT']);
 //
 // 검색 결과
 //
+
 // 검색 관련 상태
 const searchResults = ref([]);
 
@@ -228,6 +234,14 @@ const fetchSearchResults = async () => {
 
 // 컴포넌트 마운트 시 검색 결과 요청
 onMounted(fetchSearchResults);
+
+const goToConcertDetail = (concertId) => {
+  if (!concertId) {
+    console.warn('공연 ID가 없습니다.');
+    return;
+  }
+  router.push({ name: 'concert', params: { concertId } }); // 상세 페이지로 이동
+};
 
 //
 // 푸터 링크
