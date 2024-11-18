@@ -3,22 +3,16 @@ import MainPageView from '../views/MainPageView.vue'
 import AuthView from '../views/AuthView.vue'
 import MyPageView from '../views/MyPageView.vue'
 import SeatSelection from '../views/SeatSelection.vue'
+import CouponPage from "@/views/CouponPage.vue";
 import ConcertCreate from "@/views/ConcertCreate.vue";
 import VenueCreate from "@/views/VenueCreate.vue";
-import AdminLogin from "@/views/AdminLogin.vue";
 import AdminPage from "@/views/AdminPage.vue";
-import CouponPage from "@/views/CouponPage.vue";
-import ConcertDetailView from '@/views/ConcertDetailView.vue'
+import ConcertDetailView from "@/views/ConcertDetailView.vue";
+import AdminLogin from "@/views/AdminLogin.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/concert/{concertId}',
-      name: 'concertDetail',
-      component: ConcertDetailView,
-      meta: { requiresAuth: true, requiresAdminHeader: true },
-    },
     {
       path: '/admin/coupons',
       name: 'couponPage',
@@ -56,7 +50,7 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/seat',
+      path: '/concerts/:concertId/seat',
       name: 'seatSelection',
       component: SeatSelection,
       meta: { requiresHeader: true },
@@ -65,7 +59,13 @@ const router = createRouter({
       path: '/mypage',
       name: 'mypage',
       component: MyPageView,
-      meta: { requiresHeader: true },
+      meta: {requiresHeader: true},
+    },
+    {
+      path: '/concerts/:concertId',
+      name: 'concert',
+      component: ConcertDetailView,
+      props: true,
     },
     {
       path: '/admin/login',

@@ -35,7 +35,7 @@ import axios from "@/plugins/axios"; // axios를 통해 API 통신
 // 상태 정의
 const seats = ref([]); // 좌석 리스트
 const selectedSeats = ref([]); // 선택된 좌석 ID
-const concertId = 1; // 현재 구현에서는 임시로 1로 설정
+const props = defineProps({ concertId: Number })
 
 // 기본 좌석 가격
 const seatPrice = 10000;
@@ -62,7 +62,7 @@ const totalPrice = computed(() => {
 async function fetchSeats() {
   isLoading.value = true;
   try {
-    const response = await axios.get(`/concerts/${concertId}/seats`); // 임시 concertId 사용
+    const response = await axios.get(`/concerts/${props.concertId}/seats`); // 임시 concertId 사용
     if (response.data.status === "success") {
       seats.value = response.data.data.seatDtoList.map((seat) => ({
         id: seat.id,
