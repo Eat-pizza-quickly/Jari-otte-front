@@ -3,9 +3,23 @@
     <div class="login-form">
       <h2>관리자 로그인</h2>
       <form @submit.prevent="login">
-        <input type="text" v-model="email" placeholder="Email" required />
-        <input type="password" v-model="password" placeholder="Password" required />
-        <button type="submit" class="login-button">Login</button>
+        <input
+          type="email"
+          v-model="email"
+          :class="{ error: emailError }"
+          placeholder="Email"
+          required
+        />
+        <input
+          type="password"
+          v-model="password"
+          :class="{ error: passwordError }"
+          placeholder="Password"
+          required
+        />
+        <button type="submit" class="login-button" :disabled="isLoading">
+          {{ isLoading ? '로그인 중...' : 'Login' }}
+        </button>
       </form>
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     </div>
@@ -13,46 +27,64 @@
 </template>
 
 <script>
-import axios from '@/plugins/axios';
-import VueJwtDecode from 'vue-jwt-decode'
-
 export default {
   data() {
     return {
       email: '',
       password: '',
-      errorMessage: ''
-    };
+      errorMessage: '',
+      isLoading: false,
+      emailError: false,
+      passwordError: false,
+    }
   },
   methods: {
+    validateEmail() {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      return emailRegex.test(this.email)
+    },
     async login() {
-      try {
-        const response = await axios.post('/users/login', {
-          email: this.email,
-          password: this.password
-        });
+      this.isLoading = true
+      this.errorMessage = ''
 
-        if (response.status === 200) { // 상태 코드가 200인지 확인합니다.
-          const token = response.data.data;
-          const decodedToken = VueJwtDecode.decode(token);
+      if (!this.validateEmail()) {
+        this.emailError = true
+        this.errorMessage = '유효한 이메일 주소를 입력해주세요.'
+        this.isLoading = false
+        return
+      }
+
+      try {
+        const response = await this.$store.dispatch('/users/login', {
+          email: this.email,
+          password: this.password,
+        })
+
+        if (response.status === 200) {
+          // 상태 코드가 200인지 확인합니다.
+          const token = response.data.data
+          const decodedToken = VueJwtDecode.decode(token)
 
           if (decodedToken.userRole === 'ADMIN') {
             // 토큰을 로컬 스토리지에 저장합니다.
-            localStorage.setItem('token', token);
+            localStorage.setItem('token', token)
             // ADMIN 페이지로 이동합니다.
-            this.$router.push({ name: 'adminPage' });
+            this.$router.push({ name: 'adminPage' })
           } else {
-            this.errorMessage = '관리자 권한이 없습니다.';
+            this.errorMessage = '관리자 권한이 없습니다.'
           }
         } else {
-          this.errorMessage = response.data.message;
+          this.errorMessage = response.data.message
         }
       } catch (error) {
-        this.errorMessage = '로그인에 실패했습니다. 다시 시도해주세요.';
+        this.errorMessage =
+          error.response?.data?.message || '로그인에 실패했습니다. 다시 시도해주세요.'
+      } finally {
+        this.isLoading = false
       }
-    }
-  }
-};
+    },
+  },
+}
 </script>
 
 <style scoped>
@@ -74,8 +106,8 @@ export default {
   text-align: center;
 }
 
-input[type="text"],
-input[type="password"] {
+input[type='text'],
+input[type='password'] {
   width: 100%;
   padding: 0.75rem;
   margin-bottom: 1rem;
