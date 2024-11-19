@@ -55,69 +55,87 @@
           </div>
         </div>
 
-        <!-- 슬라이더 섹션 -->
-        <section class="slider">
-          <div class="slider-container" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
-            <div v-for="(slide, index) in slides" :key="index" class="slide">
-              {{ slide.content }}
-            </div>
-          </div>
-          <div class="slider-dots">
-            <span v-for="(slide, index) in slides" :key="index" class="dot" :class="{ active: currentSlide === index }"
-                  @click="setSlide(index)"></span>
-          </div>
-        </section>
-
-        <!-- 인기 카테고리 순위 -->
+        <!-- 인기 순위 -->
         <section class="popular-categories">
           <h2>인기 순위</h2>
-
-          <!-- 슬라이더 영역 -->
           <div class="slider-wrapper">
             <div class="slider-view">
-              <div class="slider-track" :style="{ transform: `translateX(-${currentCategory * 100}%)` }">
-                <div v-for="(category, index) in topCategories" :key="index" class="slider-item">
-                  <!-- 포스터 -->
+              <div class="slider-track" :style="{ transform: `translateX(-${popularCurrentSlide * 100}%)` }">
+                <div
+                  v-for="(concert, index) in popularCategories.slice(0, 5)"
+                  :key="concert.concertId || index"
+                  class="slider-item"
+                  :class="{ 'inactive': !concert.title }"
+                  @click="concert.title && goToConcertDetail(concert.concertId)"
+                >
                   <div class="poster">
-                    <img :src="category.thumbnailUrl || ''" alt="포스터" class="poster-image" v-if="category.thumbnailUrl" />
+                    <img :src="concert.thumbnailUrl || ''" alt="포스터" class="poster-image" v-if="concert.thumbnailUrl" />
                   </div>
-                  <!-- 텍스트 정보 -->
                   <div class="category-info">
                     <p>{{ index + 1 }}위</p>
-                    <p>타이틀: {{ category.title || '아직 준비 중' }}</p>
-                    <p>공연 날짜: {{ category.startDate || '아직 준비 중' }}</p>
-                    <p>공연 끝나는 날짜: {{ category.endDate || '아직 준비 중' }}</p>
+                    <p>타이틀: {{ concert.title || '아직 준비 중' }}</p>
+                    <p>시작 날짜: {{ concert.startDate || '아직 준비 중' }}</p>
+                    <p>종료 날짜: {{ concert.endDate || '아직 준비 중' }}</p>
                   </div>
                 </div>
               </div>
             </div>
-            <button class="slider-button left" @click="prevCategory">&lt;</button>
-            <button class="slider-button right" @click="nextCategory">&gt;</button>
+            <button class="slider-button left" @click="prevPopularSlide">&lt;</button>
+            <button class="slider-button right" @click="nextPopularSlide">&gt;</button>
           </div>
 
           <!-- 하단 순위 목록 -->
           <ul class="bottom-ranking">
-            <li v-for="(category, index) in bottomCategories" :key="index">
+            <li
+              v-for="(concert, index) in popularCategories.slice(5, 10)"
+              :key="concert.concertId || index"
+              :class="{ 'inactive': !concert.title }"
+              @click="concert.title && goToConcertDetail(concert.concertId)"
+            >
               <!-- 작은 포스터 -->
               <div class="small-poster">
-                <img :src="category.thumbnailUrl || ''" alt="포스터" class="small-poster-image" v-if="category.thumbnailUrl" />
+                <img :src="concert.thumbnailUrl || ''" alt="포스터" class="small-poster-image"
+                     v-if="concert.thumbnailUrl" />
               </div>
               <!-- 텍스트 정보 -->
               <div class="category-info">
                 <p>{{ index + 6 }}위</p>
-                <p>타이틀: {{ category.title || '아직 준비 중' }}</p>
-                <p>공연 날짜: {{ category.startDate || '아직 준비 중' }}</p>
-                <p>공연 끝나는 날짜: {{ category.endDate || '아직 준비 중' }}</p>
+                <p>타이틀: {{ concert.title || '아직 준비 중' }}</p>
+                <p>공연 날짜: {{ concert.performDate || '아직 준비 중' }}</p>
+                <p>예약 시작 날짜: {{ concert.startDate || '아직 준비 중' }}</p>
+                <p>예약 종료 날짜: {{ concert.endDate || '아직 준비 중' }}</p>
               </div>
             </li>
           </ul>
         </section>
 
+        <!-- 슬라이더 섹션 -->
+        <section class="slider">
+          <div class="slider-container" :style="{ transform: `translateX(-${generalCurrentSlide * 100}%)` }">
+            <div v-for="(slide, index) in generalSlides" :key="index" class="slide">
+              {{ slide.content }}
+            </div>
+          </div>
+          <div class="slider-dots">
+            <span
+              v-for="(slide, index) in generalSlides"
+              :key="index"
+              class="dot"
+              :class="{ active: generalCurrentSlide === index }"
+              @click="setGeneralSlide(index)"
+            ></span>
+          </div>
+        </section>
 
         <!-- 추천 공연 섹션 -->
         <section class="recommended-events">
-          <!-- 추천 공연 카드 -->
-          <div class="event-card" v-for="event in events" :key="event.id || event.title">
+          <!-- 공연 카드 -->
+          <div
+            class="event-card"
+            v-for="event in events"
+            :key="event.id || event.title"
+            @click="goToConcertDetail(event.id)"
+          >
             <!-- 포스터 이미지 -->
             <div class="event-image">
               <img :src="event.thumbnailUrl || ''" alt="포스터 이미지" v-if="event.thumbnailUrl" />
@@ -126,7 +144,9 @@
             <div class="event-info">
               <p class="event-category">{{ event.category }}</p>
               <h3 class="event-title">{{ event.title }}</h3>
-              <p class="event-date">{{ event.date }}</p>
+              <p class="event-date">{{ event.performDate }}</p>
+              <p class="event-date">{{ event.startDate }}</p>
+              <p class="event-date">{{ event.endDate }}</p>
             </div>
           </div>
         </section>
@@ -142,158 +162,145 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import axiosInstance from '@/plugins/axios'; // Axios 인스턴스 가져오기
-import { useRouter } from 'vue-router';
+import axiosInstance from '@/plugins/axios' // Axios 인스턴스 가져오기
+import { useRouter } from 'vue-router'
 
 //
 // 검색창 관련 상태 및 기능
 //
-const searchQuery = ref(''); // 검색 입력값
-const suggestions = ref([]); // 추천 리스트
-const isLoading = ref(false); // 로딩 상태
-const showSuggestions = ref(false); // 추천 리스트 표시 여부
-const router = useRouter(); // 라우터 사용
+const searchQuery = ref('') // 검색 입력값
+const suggestions = ref([]) // 추천 리스트
+const isLoading = ref(false) // 로딩 상태
+const showSuggestions = ref(false) // 추천 리스트 표시 여부
+const router = useRouter() // 라우터 사용
 
 // 추천 리스트 가져오기 함수 (API 통신)
 const fetchSuggestions = async (query) => {
   if (!query.trim()) {
     // 검색어가 없을 때 추천 초기화
-    suggestions.value = [];
-    return;
+    suggestions.value = []
+    return
   }
 
-  isLoading.value = true; // 로딩 상태 시작
+  isLoading.value = true // 로딩 상태 시작
 
   try {
     // API 호출
     const response = await axiosInstance.get('/concerts/search/autocomplete', {
-      params: { query },
-    });
+      params: { query }
+    })
 
     // 응답 데이터에서 autoList 추출
-    suggestions.value = response.data?.data?.autoList || []; // 안전하게 데이터 접근
-    showSuggestions.value = suggestions.value.length > 0; // 추천 리스트 표시 여부
+    suggestions.value = response.data?.data?.autoList || [] // 안전하게 데이터 접근
+    showSuggestions.value = suggestions.value.length > 0 // 추천 리스트 표시 여부
   } catch (error) {
-    console.error('추천 리스트를 가져오는 중 오류 발생:', error);
-    suggestions.value = []; // 오류 발생 시 추천 리스트 초기화
+    console.error('추천 리스트를 가져오는 중 오류 발생:', error)
+    suggestions.value = [] // 오류 발생 시 추천 리스트 초기화
   } finally {
-    isLoading.value = false; // 로딩 상태 종료
+    isLoading.value = false // 로딩 상태 종료
   }
-};
+}
 
 // 디바운스 처리 (짧은 시간 내 반복 입력 방지)
-let debounceTimeout;
+let debounceTimeout
 const debouncedFetchSuggestions = () => {
-  clearTimeout(debounceTimeout);
+  clearTimeout(debounceTimeout)
   debounceTimeout = setTimeout(() => {
-    fetchSuggestions(searchQuery.value);
-  }, 300);
-};
+    fetchSuggestions(searchQuery.value)
+  }, 300)
+}
 
 // 추천 항목 선택
 const selectSuggestion = (suggestion) => {
-  searchQuery.value = suggestion; // 선택 항목을 검색창에 반영
-  showSuggestions.value = false; // 추천 리스트 숨기기
-  executeSearch(); // 추천 항목 선택 후 검색 실행
-};
+  searchQuery.value = suggestion // 선택 항목을 검색창에 반영
+  showSuggestions.value = false // 추천 리스트 숨기기
+  executeSearch() // 추천 항목 선택 후 검색 실행
+}
 
 // 검색 실행 함수 (검색 결과 페이지로 이동)
 const executeSearch = () => {
-  if (!searchQuery.value.trim()) return; // 빈 검색어 방지
-  showSuggestions.value = false; // 추천 리스트 숨기기
-  router.push({ name: 'searchResults', query: { query: searchQuery.value } }); // 검색 결과 페이지로 이동
-};
+  if (!searchQuery.value.trim()) return // 빈 검색어 방지
+  showSuggestions.value = false // 추천 리스트 숨기기
+  router.push({ name: 'searchResults', query: { query: searchQuery.value } }) // 검색 결과 페이지로 이동
+}
 
 // 검색창 외부 클릭 감지
 const handleClickOutside = (event) => {
-  const searchContainer = document.querySelector('.search-container');
+  const searchContainer = document.querySelector('.search-container')
   if (searchContainer && !searchContainer.contains(event.target)) {
-    showSuggestions.value = false; // 외부 클릭 시 추천 리스트 닫기
+    showSuggestions.value = false // 외부 클릭 시 추천 리스트 닫기
   }
-};
+}
 
 // 클릭 이벤트 등록 및 해제
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-});
+  document.addEventListener('click', handleClickOutside)
+})
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
-});
+  document.removeEventListener('click', handleClickOutside)
+})
 
 //
-// 카테고리 및 인기 항목 관련 상태
+// 인기 항목 관련 상태
 //
-const categories = ref(['콘서트', '전시/행사', '연극', 'ESPORT']);
+const categories = ref(['콘서트', '전시/행사', '연극', 'ESPORT'])
 // 초기 빈 데이터 생성
 const createEmptyCategories = (count) =>
   Array(count).fill({
     thumbnailUrl: '', // 빈 포스터
     title: null, // 타이틀이 없을 때
-    startDate: null, // 시작 날짜 없음
-    endDate: null, // 종료 날짜 없음
-  });
+    performDate: null, // 공연 날짜 없음
+    startDate: null, // 예약 시작 날짜 없음
+    endDate: null // 예약 종료 날짜 없음
+  })
 
 // 인기 콘서트 데이터 상태
-const popularCategories = ref(createEmptyCategories()); // 초기에는 빈 데이터
+const popularCategories = ref(createEmptyCategories()) // 초기에는 빈 데이터
 
 // API 호출 함수
 const fetchPopularConcerts = async () => {
   try {
-    const response = await axiosInstance.get('/concerts/popular');
-    const data = response.data?.data?.concertSimpleDtoList || [];
+    const response = await axiosInstance.get('/concerts/popular')
+    const data = response.data?.data?.concertSimpleDtoList || []
 
     // 데이터 개수가 10개 미만이면 나머지를 "빈 데이터"로 채움
-    const filledData = [...data, ...createEmptyCategories(10 - data.length)];
-    popularCategories.value = filledData;
+    const filledData = [...data, ...createEmptyCategories(10 - data.length)]
+    popularCategories.value = filledData
   } catch (error) {
-    console.error('인기 콘서트 데이터를 가져오는 중 오류 발생:', error);
+    console.error('인기 콘서트 데이터를 가져오는 중 오류 발생:', error)
 
     // API 호출 실패 시 빈 데이터로 초기화
-    popularCategories.value = createEmptyCategories(10);
+    popularCategories.value = createEmptyCategories(10)
   }
-};
+}
 
 // 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
-  fetchPopularConcerts();
-});
-
-// 슬라이더 및 하단 목록 계산
-const topCategories = computed(() => popularCategories.value.slice(0, 5)); // 1~5위
-const bottomCategories = computed(() => popularCategories.value.slice(5, 10)); // 6~10위
+  fetchPopularConcerts()
+})
 
 // 슬라이더 상태
-const currentCategory = ref(0);
-
-// 슬라이더 이동 계산
-const nextCategory = () => {
-  currentCategory.value = (currentCategory.value + 1) % topCategories.value.length; // 다음 슬라이드
-};
-
-const prevCategory = () => {
-  currentCategory.value =
-    (currentCategory.value - 1 + topCategories.value.length) % topCategories.value.length; // 이전 슬라이드
-};
+const currentCategory = ref(0)
 
 // 슬라이더 위치 업데이트
 const updateSliderPosition = () => {
-  const sliderTrack = document.querySelector('.slider-track');
-  const translateValue = -currentCategory.value * 100; // 이동 거리 계산
-  sliderTrack.style.transform = `translateX(${translateValue}%)`;
-};
+  const sliderTrack = document.querySelector('.slider-track')
+  const translateValue = -currentCategory.value * 100 // 이동 거리 계산
+  sliderTrack.style.transform = `translateX(${translateValue}%)`
+}
 
 // 반응형 대응
 window.addEventListener('resize', () => {
-  currentCategory.value = 0; // 크기 변경 시 슬라이더 초기화
-  updateSliderPosition(); // 위치 재설정
-});
+  currentCategory.value = 0 // 크기 변경 시 슬라이더 초기화
+  updateSliderPosition() // 위치 재설정
+})
 
 //
 // 공연 이벤트 상태
 //
 // 추천 공연 데이터 상태
-const events = ref([]);
+const events = ref([])
 
 // API 호출 함수
 const fetchRecommendedEvents = async () => {
@@ -301,74 +308,98 @@ const fetchRecommendedEvents = async () => {
     const response = await axiosInstance.get('/concerts', {
       params: {
         page: 0, // 첫 번째 페이지
-        size: 10, // 최대 10개 가져오기
-      },
-    });
+        size: 10 // 최대 10개 가져오기
+      }
+    })
 
     // 데이터가 있으면 상태 업데이트, 없으면 빈 상태 유지
-    const concertData = response.data?.data?.concertSimpleDtoList || [];
+    const concertData = response.data?.data?.concertSimpleDtoList || []
     events.value = concertData.map((concert) => ({
       id: concert.concertId || null,
       category: '공연', // 카테고리가 없으므로 기본값 설정
       title: concert.title || '아직 준비 중',
-      date: concert.startDate || '아직 준비 중',
-      thumbnailUrl: concert.thumbnailUrl || '', // 포스터 이미지
-    }));
+      performDate: concert.performDate || '아직 준비 중',
+      startDate: concert.startDate || '아직 준비 중',
+      endDate: concert.endDate || '아직 준비 중',
+      thumbnailUrl: concert.thumbnailUrl || '' // 포스터 이미지
+    }))
   } catch (error) {
-    console.error('추천 공연 데이터를 가져오는 중 오류 발생:', error);
+    console.error('추천 공연 데이터를 가져오는 중 오류 발생:', error)
     // 에러 발생 시 빈 데이터를 기본 상태로 설정
     events.value = Array(10).fill({
       id: null,
       category: '공연',
       title: '아직 준비 중',
       date: '아직 준비 중',
-      thumbnailUrl: '',
-    });
+      thumbnailUrl: ''
+    })
   }
-};
+}
 
 // 컴포넌트 마운트 시 API 호출
 onMounted(() => {
-  fetchRecommendedEvents();
-});
+  fetchRecommendedEvents()
+})
+
+// 상세 페이지로 이동하는 함수
+const goToConcertDetail = (concertId) => {
+  if (!concertId) {
+    console.warn('공연 ID가 없습니다.')
+    return
+  }
+  router.push({ name: 'concert', params: { concertId } }) // 상세 페이지로 이동
+}
 
 //
 // 푸터 링크
 //
-const footerLinks = ref(['이용약관', '개인정보 처리방침', '고객센터']);
+const footerLinks = ref(['이용약관', '개인정보 처리방침', '고객센터'])
 
 //
 // 슬라이더 관련 로직
 //
-const slides = ref([
+const generalSlides = ref([
   { content: '최신 공연 정보를 나의 취향에 맞게 추천해드려요!' },
   { content: '인기 있는 공연 티켓을 놓치지 마세요!' },
-  { content: '특별 할인 이벤트 중입니다. 지금 확인하세요!' },
-]);
+  { content: '특별 할인 이벤트 중입니다. 지금 확인하세요!' }
+])
 
-const currentSlide = ref(0); // 현재 슬라이드 인덱스
-const slideInterval = ref(null); // 자동 전환 타이머
+const generalCurrentSlide = ref(0) // 일반 슬라이더 인덱스
+const generalSlideInterval = ref(null) // 일반 슬라이더 자동 전환 타이머
 
-// 다음 슬라이드로 이동
-const nextSlide = () => {
-  currentSlide.value = (currentSlide.value + 1) % slides.value.length;
-};
+// 인기 순위 슬라이더 상태
+const popularCurrentSlide = ref(0) // 인기 순위 슬라이더 인덱스
 
-// 특정 슬라이드로 설정
-const setSlide = (index) => {
-  currentSlide.value = index;
-};
+// 일반 슬라이더: 다음 슬라이드로 이동
+const nextGeneralSlide = () => {
+  generalCurrentSlide.value = (generalCurrentSlide.value + 1) % generalSlides.value.length
+}
 
-// 슬라이더 자동 전환 등록 및 해제
+// 일반 슬라이더: 특정 슬라이드로 설정
+const setGeneralSlide = (index) => {
+  generalCurrentSlide.value = index
+}
+
+// 인기 순위 슬라이더: 다음 슬라이드로 이동
+const nextPopularSlide = () => {
+  popularCurrentSlide.value = (popularCurrentSlide.value + 1) % 5 // 최대 5개
+}
+
+// 인기 순위 슬라이더: 이전 슬라이드로 이동
+const prevPopularSlide = () => {
+  popularCurrentSlide.value = (popularCurrentSlide.value - 1 + 5) % 5 // 최대 5개
+}
+
+// 일반 슬라이더 자동 전환 등록 및 해제
 onMounted(() => {
-  slideInterval.value = setInterval(nextSlide, 5000);
-});
+  generalSlideInterval.value = setInterval(nextGeneralSlide, 5000) // 5초마다 전환
+})
 
 onUnmounted(() => {
-  if (slideInterval.value) {
-    clearInterval(slideInterval.value);
+  if (generalSlideInterval.value) {
+    clearInterval(generalSlideInterval.value)
   }
-});
+})
 </script>
 
 <style scoped>
@@ -391,13 +422,17 @@ onUnmounted(() => {
 
 /* 사이드바 스타일 */
 .sidebar {
-  width: 220px;
+  position: fixed;
+  right: 30px;
+  top: 25%;
+  width: 170px;
   background-color: #D9A66C;
   padding: 20px;
 }
 
 .sidebar ul {
   list-style-type: none;
+  text-align: center;
   padding: 0;
 }
 
@@ -414,7 +449,7 @@ onUnmounted(() => {
 /* 메인 콘텐츠 스타일 */
 .main-content {
   flex: 1;
-  padding: 30px;
+  padding: 30px 230px;
   background-color: #ffffff;
 }
 
@@ -492,17 +527,6 @@ onUnmounted(() => {
   color: #000; /* 텍스트 색상 변경 */
 }
 
-.suggestion-icon {
-  margin-right: 12px;
-  color: #888;
-}
-
-.suggestion-arrow {
-  margin-left: auto;
-  color: #aaa; /* 기본 색상 변경 */
-  transition: color 0.3s ease; /* 전환 효과 추가 */
-}
-
 .suggestion-item:hover .suggestion-arrow {
   color: #555; /* 호버 시 강조 */
 }
@@ -549,7 +573,7 @@ onUnmounted(() => {
 
 /* 슬라이더 스타일 */
 .slider {
-  margin: 20px 0;
+  margin: 0 0 60px 0;
   position: relative;
   overflow: hidden;
 }
@@ -593,7 +617,8 @@ onUnmounted(() => {
 .popular-categories h2 {
   text-align: center; /* 텍스트 중앙 정렬 */
   font-size: 24px; /* 폰트 크기 */
-  margin-bottom: 20px; /* 하단 여백 */
+  margin-top: 30px; /* 상단 여백 */
+  margin-bottom: 15px; /* 하단 여백 */
   font-weight: bold; /* 텍스트 굵게 */
 }
 
@@ -609,7 +634,7 @@ onUnmounted(() => {
 .slider-wrapper {
   position: relative;
   overflow: hidden;
-  width: 100%;
+  width: 35%;
   max-width: 1400px; /* 슬라이더 최대 너비 */
   margin: 0 auto; /* 중앙 정렬 */
 }
@@ -640,10 +665,16 @@ onUnmounted(() => {
   padding: 20px;
 }
 
+.slider-item.inactive {
+  cursor: not-allowed;
+  opacity: 0.5; /* 흐리게 처리 */
+  pointer-events: none; /* 클릭 방지 */
+}
+
 /* 큰 포스터 스타일 */
 .poster {
-  width: 500px;
-  height: 750px;
+  width: 400px;
+  height: 550px;
   background-color: #f0f0f0;
   margin-bottom: 20px;
   display: flex;
@@ -663,8 +694,7 @@ onUnmounted(() => {
 /* 버튼 */
 .slider-button {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 36%;
   background: white;
   border: none;
   font-size: 24px;
@@ -687,7 +717,7 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap; /* 화면 크기에 따라 줄바꿈 */
   justify-content: center; /* 중앙 정렬 */
-  gap: 50px; /* 포스터 간 간격 */
+  gap: 0px; /* 포스터 간 간격 */
   padding: 20px 0;
   margin-top: 40px; /* 상단과 간격 증가 */
 }
@@ -728,7 +758,7 @@ onUnmounted(() => {
 
 /* 슬라이더와 하단 간격 */
 .popular-categories {
-  margin-bottom: 50px; /* 슬라이더와 하단 목록 간격 */
+  margin-bottom: 20px; /* 슬라이더와 하단 목록 간격 */
 }
 
 /* 하단 순위와 푸터 사이 간격 */
