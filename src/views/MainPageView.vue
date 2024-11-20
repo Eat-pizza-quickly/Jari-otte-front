@@ -161,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import axiosInstance from '@/plugins/axios' // Axios 인스턴스 가져오기
 import { useRouter } from 'vue-router'
 
@@ -261,7 +261,7 @@ const popularCategories = ref(createEmptyCategories()) // 초기에는 빈 데�
 // API 호출 함수
 const fetchPopularConcerts = async () => {
   try {
-    const response = await axiosInstance.get('/concerts/popular')
+    const response = await axiosInstance.get('/concerts/top')
     const data = response.data?.data?.concertSimpleDtoList || []
 
     // 데이터 개수가 10개 미만이면 나머지를 "빈 데이터"로 채움
