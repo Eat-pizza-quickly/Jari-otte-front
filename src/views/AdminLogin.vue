@@ -93,46 +93,91 @@ export default {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #f0f0f0;
+  background: linear-gradient(135deg, #74ebd5, #acb6e5);
+  font-family: 'Arial', sans-serif;
 }
 
 .login-form {
   background-color: #ffffff;
-  padding: 2rem;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 350px;
+  max-width: 400px;
   text-align: center;
 }
 
-input[type='text'],
+.login-form h2 {
+  margin-bottom: 1.5rem;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+input[type='email'],
 input[type='password'] {
   width: 100%;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
+  padding: 0.85rem;
+  margin-bottom: 1.2rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 6px;
   box-sizing: border-box;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+input[type='email']:focus,
+input[type='password']:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+input.error {
+  border-color: #e74c3c;
+  background-color: #fdecea;
 }
 
 .login-button {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.85rem;
   background-color: #007bff;
   color: #ffffff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
-.login-button:hover {
+.login-button:disabled {
+  background-color: #a3c4f3;
+  cursor: not-allowed;
+}
+
+.login-button:hover:not(:disabled) {
   background-color: #0056b3;
+  transform: translateY(-2px);
 }
 
 .error-message {
-  color: red;
+  color: #e74c3c;
+  font-size: 0.9rem;
   margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .login-form {
+    padding: 2rem;
+  }
+
+  input[type='email'],
+  input[type='password'],
+  .login-button {
+    font-size: 0.9rem;
+  }
+
+  .login-form h2 {
+    font-size: 1.3rem;
+  }
 }
 </style>
