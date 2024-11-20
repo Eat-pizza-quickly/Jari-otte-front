@@ -59,7 +59,8 @@ const router = createRouter({
       path: '/concerts/:concertId',
       name: 'concert',
       component: ConcertDetailView,
-      props: true
+      props: true,
+      meta: { requiresHeader: true },
     },
     {
       path: '/admin/login',
