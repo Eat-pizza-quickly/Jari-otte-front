@@ -30,7 +30,7 @@ const username = ref('')
 const token = ref(localStorage.getItem('token')) // 반응형 토큰
 
 // API 기본 URL
-const API_BASE_URL = 'http://api.jariotte.store/api/v1/users'
+const API_BASE_URL = 'https://api.jariotte.store/api/v1/users'
 
 // Axios 인스턴스 생성
 const api = axios.create({

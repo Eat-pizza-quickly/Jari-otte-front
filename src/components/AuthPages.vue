@@ -66,9 +66,9 @@ const isLoading = ref(false)
 const error = ref('')
 const isProcessingKakao = ref(false)
 
-const API_BASE_URL = 'http://api.jariotte.store/api/v1/users'
+const API_BASE_URL = 'https://api.jariotte.store/api/v1/users'
 const KAKAO_CLIENT_ID = '8a8997adb373bd809a4e9631152c6d88'
-const KAKAO_REDIRECT_URI = 'http://api.jariotte.store/api/v1/users/oauth/kakao/callback'
+const KAKAO_REDIRECT_URI = 'https://api.jariotte.store/api/v1/users/oauth/kakao/callback'
 
 const api = axios.create({
   baseURL: API_BASE_URL,

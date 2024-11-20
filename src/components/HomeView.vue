@@ -13,7 +13,7 @@ import axios from 'axios'
 const router = useRouter()
 const username = ref('')
 
-const API_BASE_URL = 'http://api.jariotte.store/api/v1/users'
+const API_BASE_URL = 'https://api.jariotte.store/api/v1/users'
 
 const api = axios.create({
   baseURL: API_BASE_URL,

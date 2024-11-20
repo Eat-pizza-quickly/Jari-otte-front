@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Axios 인스턴스 생성
 const axiosInstance = axios.create({
-  baseURL: 'http://api.jariotte.store/api/v1', // API의 기본 URL
+  baseURL: 'https://api.jariotte.store/api/v1', // API의 기본 URL
   timeout: 10000, // 요청 타임아웃 (밀리초)
 });
 

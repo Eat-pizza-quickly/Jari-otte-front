@@ -15,5 +15,5 @@ app.use(router)
 
 app.mount('#app')
 
-axios.defaults.baseURL = 'http://api.jariotte.store/api/v1'
+axios.defaults.baseURL = 'https://api.jariotte.store/api/v1'
 axios.defaults.withCredentials = true
