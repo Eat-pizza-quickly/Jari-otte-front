@@ -133,7 +133,7 @@ const paymentTotalPages = ref(1);
 const reservationFilter = ref('all');
 const paymentFilter = ref('all');
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'http://api.jariotte.store/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
