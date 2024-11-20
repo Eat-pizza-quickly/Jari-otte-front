@@ -73,6 +73,13 @@ const router = createRouter({
       name: "searchResults",
       component: SearchConcertView,
       meta: { requiresHeader: true }
+    },
+    {
+      path: '/concerts/:concertId/edit',
+      name: 'concertEdit',
+      component: ConcertEditView,
+      props: true,
+      meta: { requiresHeader: true },
     }
   ]
 })
@@ -85,6 +92,7 @@ import AdminPage from '@/views/AdminPage.vue'
 import ConcertDetailView from '@/views/ConcertDetailView.vue'
 import AdminLogin from '@/views/AdminLogin.vue'
 import SearchConcertView from "@/views/SearchConcertView.vue";
+import ConcertEditView from '@/views/ConcertEditView.vue'
 
 router.beforeEach((to, from, next) => {
   // URL에 token 파라미터가 있는지 확인

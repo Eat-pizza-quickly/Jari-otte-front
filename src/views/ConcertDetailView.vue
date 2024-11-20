@@ -12,11 +12,37 @@ const concertDetail = ref({
   title: '',
   location: '',
   description: '',
+  artists: '',
   seatCount: 0,
   startDate: '',
   endDate: '',
   thumbnailUrl: '',
 })
+
+const token = localStorage.getItem('token');
+
+// userRole 초기화
+const userRole = ref(null);
+
+if (token) {
+  try {
+    // `Bearer`가 없는 경우도 처리
+    const jwt = token.includes('Bearer ') ? token.split(' ')[1] : token;
+
+    // JWT의 payload 파싱
+    const payload = JSON.parse(atob(jwt.split('.')[1]));
+
+    // userRole 추출
+    userRole.value = payload.userRole;
+
+    console.log('userRole:', userRole);
+  } catch (error) {
+    console.error('Failed to parse JWT:', error);
+  }
+} else {
+  console.error('No token found in localStorage');
+}
+
 
 // 댓글 데이터와 페이지 정보
 const reviews = ref([]);
@@ -48,6 +74,8 @@ const getConcert = () => {
     .then((response) => {
       concertDetail.value = response.data.data
       console.log(concertDetail.value)
+      // 대괄호 제거
+      concertDetail.value.artists = concertDetail.value.artists.replace(/^\[|\]$/g, '');
     })
     .catch((e) => {
       console.log('ERROR', e)
@@ -70,6 +98,11 @@ const goToSeatSelection = () => {
   router.push(`/concerts/${props.concertId}/seat`)
 }
 
+// 수정 페이지로 이동
+const goToEditConcert = () => {
+  router.push(`/concerts/${props.concertId}/edit`)
+}
+
 // 댓글 입력 상태 관리
 const newReview = ref({
   rating: 0, // 평점 (별점 등으로 구현 가능)
@@ -85,7 +118,6 @@ const addReview = () => {
 
   axios
     .post(`/reviews?concertId=${props.concertId}`, {
-      concertId: props.concertId,
       rating: newReview.value.rating,
       content: newReview.value.content,
     })
@@ -123,11 +155,22 @@ onMounted(() => {
     <!-- 정보 섹션 -->
     <div class="concert-info">
       <h1 class="concert-title">{{ concertDetail.title }}</h1>
+      <p class="concert-description">{{ concertDetail.description }}</p>
       <ul class="info-list">
+        <li><strong>출연자:</strong> {{ concertDetail.artists }}</li>
         <li><strong>장소:</strong> {{ concertDetail.location }}</li>
         <li><strong>공연 일자:</strong> {{ formatDate(concertDetail.startDate) }}</li>
         <li><strong>예매 기간:</strong> {{ formatDate(concertDetail.endDate) }}</li>
       </ul>
+      <!-- 수정하기 버튼 -->
+      <button
+        v-if="userRole === 'ADMIN'"
+        class="btn-edit"
+        @click="goToEditConcert"
+      >
+        수정하기
+      </button>
+      <!-- 예매하기 버튼 -->
       <button class="btn-reserve" @click="goToSeatSelection">예매하기</button>
     </div>
 
@@ -140,14 +183,14 @@ onMounted(() => {
         class="review-textarea"
       ></textarea>
       <div class="review-actions">
-        <input
-          v-model="newReview.rating"
-          type="number"
-          placeholder="평점 (1-5)"
-          min="1"
-          max="5"
-          class="review-rating"
-        />
+<!--        <input-->
+<!--          v-model="newReview.rating"-->
+<!--          type="number"-->
+<!--          placeholder="평점 (1-5)"-->
+<!--          min="1"-->
+<!--          max="5"-->
+<!--          class="review-rating"-->
+<!--        />-->
         <button @click="addReview" class="btn-submit-review">댓글 등록</button>
       </div>
     </div>
@@ -240,10 +283,18 @@ onMounted(() => {
 
 /* 제목 스타일 */
 .concert-title {
-  font-size: 28px; /* 제목 폰트 크기 증가 */
+  font-size: 28px; /* 제목 크기 */
   font-weight: bold;
   color: #333;
-  margin-bottom: 15px; /* 제목과 리스트 간격 */
+  margin-bottom: 10px; /* 제목과 내용 간격 */
+}
+
+/* 내용 스타일 */
+.concert-description {
+  font-size: 16px; /* 내용 크기 */
+  color: #666;
+  margin-bottom: 20px; /* 내용과 정보 리스트 간격 */
+  line-height: 1.5; /* 줄 간격 */
 }
 
 /* 정보 리스트 스타일 */
@@ -393,14 +444,14 @@ onMounted(() => {
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
-  resize: vertical; /* 사용자가 높이를 조정할 수 있도록 설정 */
+  resize: none; /* 크기 조정 비활성화 */
   margin-bottom: 15px; /* 작성 버튼과 간격 추가 */
 }
 
 .review-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* 버튼과 입력 필드를 양쪽으로 정렬 */
+  justify-content: flex-end; /* 버튼을 오른쪽으로 정렬 */
   gap: 15px;
 }
 
@@ -427,4 +478,25 @@ onMounted(() => {
   background-color: #b68855;
   transform: scale(1.05);
 }
+
+/* 버튼 스타일 */
+.btn-reserve,
+.btn-edit {
+  padding: 15px 25px; /* 버튼 크기 */
+  background-color: #d9a66c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 18px; /* 폰트 크기 */
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-reserve:hover,
+.btn-edit:hover {
+  background-color: #b68855;
+  transform: scale(1.05);
+}
+
+
 </style>
