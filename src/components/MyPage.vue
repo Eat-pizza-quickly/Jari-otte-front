@@ -59,15 +59,18 @@
           <button @click="reservationFilter = 'pending'" :class="{ active: reservationFilter === 'pending' }">결제 대기중</button>
         </div>
         <div v-if="filteredReservations.length > 0" class="list-container">
-          <div v-for="reservation in filteredReservations" :key="reservation.seatId" class="list-item">
+          <div v-for="reservation in filteredReservations" :key="reservation.reservationId" class="list-item">
             <div>
-              <span class="item-title">{{ reservation.concertTitle }}</span>
+              <span class="item-title">콘서트 ID: {{ reservation.concertId }}</span>
               <span class="item-date">{{ formatDate(reservation.createdAt) }}</span>
               <div class="item-details">
                 <span>좌석: {{ reservation.seatNumber }}</span>
                 <span class="item-price">{{ reservation.price.toLocaleString() }}원</span>
               </div>
-              <button v-if="reservation.reservationStatus === 'PENDING'" @click="requestTossPayment(reservation)" class="payment-button">
+              <div class="reservation-status">
+                상태: {{ getReservationStatusText(reservation.status) }}
+              </div>
+              <button v-if="reservation.status === 'PENDING'" @click="requestTossPayment(reservation)" class="payment-button">
                 결제 진행
               </button>
             </div>
@@ -81,7 +84,7 @@
         </div>
       </div>
 
-      <!-- 결제 내역 섹션 (수정됨) -->
+      <!-- 결제 내역 섹션 -->
       <div v-if="activeSection === 'payments'" class="section">
         <h2>결제 내역</h2>
         <div class="filter-buttons">
@@ -128,6 +131,7 @@ const reservations = ref([]);
 const payments = ref([]);
 const reservationPage = ref(1);
 const reservationTotalPages = ref(1);
+const reservationTotalCount = ref(0);
 const paymentPage = ref(1);
 const paymentTotalPages = ref(1);
 const reservationFilter = ref('all');
@@ -234,15 +238,18 @@ const fetchReservations = async () => {
     const { data } = await api.get('/reservations', {
       params: { page: reservationPage.value - 1, size: 4 },
     });
-    const reservationsWithDetails = await Promise.all(data.data.content.map(async (reservation) => {
-      const concertResponse = await api.get(`/concerts/${reservation.concertId}`);
-      return {
-        ...reservation,
-        concertTitle: concertResponse.data.data.title
-      };
+    reservations.value = data.data.content.map(reservation => ({
+      reservationId: reservation.reservationId,
+      concertId: reservation.concertId,
+      createdAt: reservation.createdAt,
+      price: reservation.price,
+      seatId: reservation.seatId,
+      seatNumber: reservation.seatNumber,
+      status: reservation.reservationStatus,
+      userId: reservation.userId
     }));
-    reservations.value = reservationsWithDetails;
     reservationTotalPages.value = data.data.totalPages;
+    reservationTotalCount.value = data.data.totalElements;
   } catch (error) {
     console.error('예약 정보 가져오기 실패:', error);
     handleApiError(error);
@@ -314,87 +321,115 @@ const requestTossPayment = async (reservation) => {
     return;
   }
 
-  if (!reservation || !reservation.id) {
+  console.log('Toss Payments SDK initialized:', !!tossPayments.value); // 추가된 로깅
+
+  if (!reservation || !reservation.reservationId || reservation.status !== 'PENDING') {
     console.error('Invalid reservation data:', reservation);
-    alert('예약 정보가 올바르지 않습니다. 페이지를 새로고침하고 다시 시도해주세요.');
+    alert('결제할 수 있는 예약이 아닙니다. 페이지를 새로고침하고 다시 시도해주세요.');
     return;
   }
 
   try {
     const payload = {
-      reservationId: reservation.id,
+      reservationId: reservation.reservationId,
       amount: reservation.price,
-      payInfo: `${reservation.concertTitle} 예매`
+      payInfo: `콘서트 ID ${reservation.concertId} 좌석 ${reservation.seatNumber} 예매`
     };
 
     console.log('Sending payment request with payload:', payload);
 
     const response = await api.post('/payments/toss', payload);
-    const { orderId, paymentKey, amount } = response.data;
+    console.log('Server response:', response.data); // 전체 응답 로깅
+
+    // 응답 구조 확인 및 필요한 데이터 추출
+    const responseData = response.data.data || response.data;
+    const { orderId, paymentKey, amount, status } = responseData;
+
+    if (!orderId || !paymentKey || !amount) {
+      console.error('Missing required data in server response:', responseData);
+      throw new Error('서버 응답에 필요한 정보가 누락되었습니다.');
+    }
+
+    if (status !== 'READY') {
+      console.error('Unexpected payment status:', status);
+      throw new Error(`결제 요청 상태가 올바르지 않습니다: ${status}`);
+    }
 
     await tossPayments.value.requestPayment('카드', {
       amount: amount,
       orderId: orderId,
+      paymentKey: paymentKey,
       orderName: payload.payInfo,
       customerName: user.value.nickname,
       successUrl: `${window.location.origin}/mypage`,
       failUrl: `${window.location.origin}/mypage`,
-      paymentKey: paymentKey
     });
 
   } catch (error) {
     console.error('결제 요청 실패:', error);
-    if (error.response) {
-      console.error('Error response:', error.response.data);
-      alert(`결제 요청 실패: ${error.response.data.message || '알 수 없는 오류가 발생했습니다.'}`);
-    } else if (error.request) {
-      console.error('No response received:', error.request);
-      alert('서버로부터 응답을 받지 못했습니다. 네트워크 연결을 확인해주세요.');
-    } else {
-      console.error('Error setting up request:', error.message);
-      alert(`결제 중 오류가 발생했습니다: ${error.message}`);
-    }
-  }
-};
-
-const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
-  try {
-    const response = await api.get('/payments/toss/success', {
-      params: { paymentKey, orderId, amount }
-    });
-
-    if (response.data.payStatus === 'PAID') {
-      console.log('Payment successful:', response.data);
-      alert('결제가 성공적으로 완료되었습니다.');
-      activeSection.value = 'reservations';
-      await refreshReservations();
-      router.replace({ query: null });
-    }
-  } catch (error) {
-    console.error('Payment success handling failed:', error);
-    let errorMessage = '결제 처리 중 오류가 발생했습니다.';
+    let errorMessage = '결제 요청 중 오류가 발생했습니다.';
 
     if (error.response) {
       console.error('Error response:', error.response.data);
-      if (error.response.data?.message) {
-        errorMessage = error.response.data.message;
-        if (errorMessage.includes("잘못된 시크릿키 연동 정보")) {
-          errorMessage = "결제 시스템 설정에 문제가 있습니다. 관리자에게 문의해주세요.";
-        } else if (errorMessage.includes("결제 세션이 만료되었습니다")) {
-          errorMessage = "결제 가능 시간이 만료되었습니다. 다시 시도해주세요.";
-          router.push('/payment/new');
-          return;
-        }
-      }
+      errorMessage = error.response.data.message || '서버에서 오류 응답을 받았습니다.';
     } else if (error.request) {
       console.error('No response received:', error.request);
       errorMessage = '서버로부터 응답을 받지 못했습니다. 네트워크 연결을 확인해주세요.';
     } else {
       console.error('Error setting up request:', error.message);
+      errorMessage = `결제 요청 설정 중 오류가 발생했습니다: ${error.message}`;
     }
 
     alert(errorMessage);
-    router.push('/payment/error');
+  }
+};
+
+const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
+  try {
+    console.log('Payment success callback initiated', { paymentKey, orderId, amount });
+    const response = await api.get('/payments/toss/success', {
+      params: { paymentKey, orderId, amount }
+    });
+    console.log('Payment success API response:', response.data);
+
+    // 백엔드에서 리다이렉트 문자열을 반환하는 경우 처리
+    if (typeof response.data === 'string') {
+      if (response.data.includes('redirect:/payment/success')) {
+        console.log('Payment confirmed as successful');
+        alert('결제가 성공적으로 완료되었습니다.');
+        activeSection.value = 'reservations';
+        await refreshReservations();
+        router.replace({ query: null });
+      } else if (response.data.includes('redirect:/payment/error')) {
+        throw new Error('결제 처리 중 오류가 발생했습니다.');
+      } else if (response.data.includes('redirect:/payment/new')) {
+        throw new Error('결제 가능 시간이 만료되었습니다. 다시 시도해주세요.');
+      } else {
+        throw new Error('알 수 없는 응답: ' + response.data);
+      }
+    } else {
+      // JSON 응답인 경우 (향후 백엔드 변경을 대비)
+      if (response.data.success) {
+        console.log('Payment confirmed as successful');
+        alert(response.data.message || '결제가 성공적으로 완료되었습니다.');
+        activeSection.value = 'reservations';
+        await refreshReservations();
+        router.replace({ query: null });
+      } else {
+        throw new Error(response.data.message || '결제 처리 중 오류가 발생했습니다.');
+      }
+    }
+  } catch (error) {
+    console.error('Payment success handling failed:', error);
+    let errorMessage = error.message || '결제 처리 중 오류가 발생했습니다.';
+
+    if (errorMessage.includes('결제 가능 시간이 만료되었습니다')) {
+      alert(errorMessage);
+      router.push('/payment/new');
+    } else {
+      alert(errorMessage);
+      router.push('/payment/error');
+    }
   }
 };
 
@@ -426,6 +461,15 @@ const getPaymentStatusClass = (status) => {
   };
 };
 
+const getReservationStatusText = (status) => {
+  const statuses = {
+    'PENDING': '결제 대기중',
+    'CONFIRMED': '예약 완료',
+    'CANCELLED': '예약 취소'
+  };
+  return statuses[status] || status;
+};
+
 watch(activeSection, (newSection) => {
   if (newSection === 'user') fetchUserInfo();
   else if (newSection === 'coupons') fetchCoupons();
@@ -435,7 +479,7 @@ watch(activeSection, (newSection) => {
 
 const filteredReservations = computed(() => {
   if (reservationFilter.value === 'pending') {
-    return reservations.value.filter(reservation => reservation.reservationStatus === 'PENDING');
+    return reservations.value.filter(reservation => reservation.status === 'PENDING');
   }
   return reservations.value;
 });
@@ -447,6 +491,8 @@ const filteredPayments = computed(() => {
   return payments.value.filter(payment => payment.payStatus === paymentFilter.value);
 });
 </script>
+
+
 <style scoped>
 .my-page-container {
   min-height: 100vh;
@@ -677,6 +723,11 @@ input {
 .status-cancelled {
   background-color: #ffebee;
   color: #c62828;
+}
+
+.reservation-status {
+  margin-top: 0.5rem;
+  color: #666;
 }
 
 .pagination {
