@@ -314,12 +314,20 @@ const requestTossPayment = async (reservation) => {
     return;
   }
 
+  if (!reservation || !reservation.id) {
+    console.error('Invalid reservation data:', reservation);
+    alert('예약 정보가 올바르지 않습니다. 페이지를 새로고침하고 다시 시도해주세요.');
+    return;
+  }
+
   try {
     const payload = {
       reservationId: reservation.id,
       amount: reservation.price,
       payInfo: `${reservation.concertTitle} 예매`
     };
+
+    console.log('Sending payment request with payload:', payload);
 
     const response = await api.post('/payments/toss', payload);
     const { orderId, paymentKey, amount } = response.data;
@@ -336,9 +344,14 @@ const requestTossPayment = async (reservation) => {
 
   } catch (error) {
     console.error('결제 요청 실패:', error);
-    if (error.code === 'USER_CANCEL') {
-      alert('결제가 취소되었습니다.');
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+      alert(`결제 요청 실패: ${error.response.data.message || '알 수 없는 오류가 발생했습니다.'}`);
+    } else if (error.request) {
+      console.error('No response received:', error.request);
+      alert('서버로부터 응답을 받지 못했습니다. 네트워크 연결을 확인해주세요.');
     } else {
+      console.error('Error setting up request:', error.message);
       alert(`결제 중 오류가 발생했습니다: ${error.message}`);
     }
   }
@@ -383,6 +396,20 @@ const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
     alert(errorMessage);
     router.push('/payment/error');
   }
+};
+
+const handlePaymentFailure = (code, message) => {
+  console.error('Payment failed:', { code, message });
+  let errorMessage = '결제에 실패했습니다.';
+
+  if (code === 'USER_CANCEL') {
+    errorMessage = '사용자에 의해 결제가 취소되었습니다.';
+  } else if (message) {
+    errorMessage += ` 오류: ${message}`;
+  }
+
+  alert(errorMessage);
+  router.push('/payment/error');
 };
 
 const refreshReservations = async () => {
