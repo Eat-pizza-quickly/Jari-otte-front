@@ -113,6 +113,7 @@
     </div>
   </div>
 </template>
+
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
 import axios from 'axios';
@@ -120,12 +121,17 @@ import { useRouter, useRoute } from 'vue-router';
 
 const router = useRouter();
 const route = useRoute();
-const activeSection = ref('reservations');
+const activeSection = ref('user');
 const user = ref({ nickname: '', password: '', id: '' });
+const coupons = ref([]);
 const reservations = ref([]);
+const payments = ref([]);
 const reservationPage = ref(1);
 const reservationTotalPages = ref(1);
+const paymentPage = ref(1);
+const paymentTotalPages = ref(1);
 const reservationFilter = ref('all');
+const paymentFilter = ref('all');
 
 const API_BASE_URL = 'https://api.jariotte.store/api/v1';
 
@@ -156,7 +162,7 @@ onMounted(async () => {
   } else {
     await fetchUserInfo();
     await loadTossPaymentsSDK();
-    await fetchReservations();
+    await fetchPayments();
   }
 
   const { paymentKey, orderId, amount, code, message } = route.query;
@@ -195,21 +201,46 @@ const fetchUserInfo = async () => {
   }
 };
 
+const updateUser = async () => {
+  try {
+    const { data } = await api.patch('/users/my', user.value);
+    alert('회원 정보가 수정되었습니다.');
+    user.value = data.data;
+  } catch (error) {
+    console.error('사용자 정보 업데이트 실패:', error);
+    if (error.response) {
+      alert(`회원 정보 수정에 실패했습니다. 서버 응답: ${error.response.data?.message || error.response.status}`);
+    } else if (error.request) {
+      alert('서버에서 응답이 없습니다. 네트워크 연결을 확인해주세요.');
+    } else {
+      alert(`회원 정보 수정 중 오류가 발생했습니다: ${error.message}`);
+    }
+    handleApiError(error);
+  }
+};
+
+const fetchCoupons = async () => {
+  try {
+    const { data } = await api.get('/coupons/my-coupon');
+    coupons.value = data.data;
+  } catch (error) {
+    console.error('쿠폰 정보 가져오기 실패:', error);
+    handleApiError(error);
+  }
+};
+
 const fetchReservations = async () => {
   try {
     const { data } = await api.get('/reservations', {
       params: { page: reservationPage.value - 1, size: 4 },
     });
-    console.log('Fetched reservations:', data.data.content);
     const reservationsWithDetails = await Promise.all(data.data.content.map(async (reservation) => {
       const concertResponse = await api.get(`/concerts/${reservation.concertId}`);
       return {
         ...reservation,
-        id: reservation.seatId, // Use seatId as a unique identifier
         concertTitle: concertResponse.data.data.title
       };
     }));
-    console.log('Reservations with details:', reservationsWithDetails);
     reservations.value = reservationsWithDetails;
     reservationTotalPages.value = data.data.totalPages;
   } catch (error) {
@@ -218,10 +249,43 @@ const fetchReservations = async () => {
   }
 };
 
+const fetchPayments = async () => {
+  try {
+    const { data } = await api.get('/payments/my-payment', {
+      params: {
+        page: paymentPage.value - 1,
+        size: 5,
+        payStatus: paymentFilter.value === 'all' ? undefined : paymentFilter.value
+      },
+    });
+    const paymentsWithTitles = await Promise.all(data.data.content.map(async (payment) => {
+      const concertResponse = await api.get(`/concerts/${payment.concertId}`);
+      return {
+        ...payment,
+        concertTitle: concertResponse.data.data.title
+      };
+    }));
+    payments.value = paymentsWithTitles;
+    paymentTotalPages.value = data.data.totalPages;
+  } catch (error) {
+    console.error('결제 정보 가져오기 실패:', error);
+    handleApiError(error);
+  }
+};
+
+const setPaymentFilter = (filter) => {
+  paymentFilter.value = filter;
+  paymentPage.value = 1;
+  fetchPayments();
+};
+
 const changePage = (section, delta) => {
   if (section === 'reservations') {
     reservationPage.value += delta;
     fetchReservations();
+  } else if (section === 'payments') {
+    paymentPage.value += delta;
+    fetchPayments();
   }
 };
 
@@ -244,14 +308,13 @@ const handleApiError = async (error) => {
 };
 
 const requestTossPayment = async (reservation) => {
-  console.log('Requesting Toss payment for reservation:', reservation);
   if (!tossPayments.value) {
     console.error('Toss Payments SDK is not initialized');
     alert('결제 시스템을 초기화하는 데 문제가 발생했습니다. 페이지를 새로고침하거나 나중에 다시 시도해주세요.');
     return;
   }
 
-  if (!reservation || !reservation.seatId) {
+  if (!reservation || !reservation.id) {
     console.error('Invalid reservation data:', reservation);
     alert('예약 정보가 올바르지 않습니다. 페이지를 새로고침하고 다시 시도해주세요.');
     return;
@@ -259,15 +322,14 @@ const requestTossPayment = async (reservation) => {
 
   try {
     const payload = {
-      reservationId: reservation.seatId,
+      reservationId: reservation.id,
       amount: reservation.price,
-      payInfo: `${reservation.concertTitle} 예매 (좌석 ${reservation.seatNumber}번)`
+      payInfo: `${reservation.concertTitle} 예매`
     };
 
     console.log('Sending payment request with payload:', payload);
 
     const response = await api.post('/payments/toss', payload);
-    console.log('Payment request response:', response.data);
     const { orderId, paymentKey, amount } = response.data;
 
     await tossPayments.value.requestPayment('카드', {
@@ -305,7 +367,7 @@ const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
       console.log('Payment successful:', response.data);
       alert('결제가 성공적으로 완료되었습니다.');
       activeSection.value = 'reservations';
-      await fetchReservations();
+      await refreshReservations();
       router.replace({ query: null });
     }
   } catch (error) {
@@ -336,33 +398,55 @@ const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
   }
 };
 
-const handlePaymentFailure = (code, message) => {
-  console.error('Payment failed:', { code, message });
-  let errorMessage = '결제에 실패했습니다.';
-
-  if (code === 'USER_CANCEL') {
-    errorMessage = '사용자에 의해 결제가 취소되었습니다.';
-  } else if (message) {
-    errorMessage += ` 오류: ${message}`;
-  }
-
-  alert(errorMessage);
-  router.push('/payment/error');
+const refreshReservations = async () => {
+  reservationPage.value = 1;
+  await fetchReservations();
 };
 
+const getCouponTypeText = (type) => {
+  const types = {
+    'LIMIT': '한정 쿠폰',
+    'ALL': '무제한 쿠폰'
+  };
+  return types[type] || type;
+};
+
+const getPaymentStatusText = (status) => {
+  const statuses = {
+    'PAID': '결제 완료',
+    'CANCELLED': '결제 취소'
+  };
+  return statuses[status] || status;
+};
+
+const getPaymentStatusClass = (status) => {
+  return {
+    'status-paid': status === 'PAID',
+    'status-cancelled': status === 'CANCELLED'
+  };
+};
+
+watch(activeSection, (newSection) => {
+  if (newSection === 'user') fetchUserInfo();
+  else if (newSection === 'coupons') fetchCoupons();
+  else if (newSection === 'reservations') fetchReservations();
+  else if (newSection === 'payments') fetchPayments();
+});
+
 const filteredReservations = computed(() => {
-  console.log('Filtering reservations:', reservations.value);
   if (reservationFilter.value === 'pending') {
     return reservations.value.filter(reservation => reservation.reservationStatus === 'PENDING');
   }
   return reservations.value;
 });
 
-watch(activeSection, (newSection) => {
-  if (newSection === 'reservations') fetchReservations();
+const filteredPayments = computed(() => {
+  if (paymentFilter.value === 'all') {
+    return payments.value;
+  }
+  return payments.value.filter(payment => payment.payStatus === paymentFilter.value);
 });
 </script>
-
 <style scoped>
 .my-page-container {
   min-height: 100vh;
@@ -425,6 +509,106 @@ h2 {
   padding: 1.5rem;
 }
 
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #D9A66C;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.submit-button:hover {
+  background-color: #c08b50;
+}
+
+.coupon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.coupon-item {
+  border: 1px solid #D9A66C;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: white;
+}
+
+.coupon-main {
+  margin-bottom: 1rem;
+}
+
+.coupon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.coupon-name {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.coupon-code {
+  background-color: #D9A66C;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.coupon-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.discount-info {
+  font-weight: bold;
+  color: #D9A66C;
+}
+
+.coupon-type {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.coupon-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #28a745;
+  font-size: 0.9rem;
+}
+
+.coupon-status.inactive {
+  color: #dc3545;
+}
+
 .list-container {
   display: flex;
   flex-direction: column;
@@ -478,6 +662,23 @@ h2 {
   font-size: 0.9rem;
 }
 
+.payment-status {
+  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 15px;
+  margin-left: 1rem;
+}
+
+.status-paid {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-cancelled {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -509,6 +710,21 @@ h2 {
   text-align: center;
   color: #666;
   padding: 20px;
+}
+
+.payment-button {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.payment-button:hover {
+  background-color: #45a049;
 }
 
 .filter-buttons {
