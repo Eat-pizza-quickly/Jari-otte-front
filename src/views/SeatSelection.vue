@@ -1,5 +1,13 @@
 <template>
   <div class="seat-selection-container">
+
+    <!-- 대기열 메시지 모달 -->
+    <dialog v-if="isInQueue" class="queue-modal" open>
+      <h2>현재 대기 중입니다.</h2>
+      <p>대기열 위치: <strong>{{ queuePosition }}</strong></p>
+      <p>잠시만 기다려주세요.</p>
+    </dialog>
+
     <!-- 좌석 영역 -->
     <div class="seat-section">
       <h2 class="stage-title">STAGE</h2>
@@ -36,14 +44,19 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from 'vue-router'
 import Seat from "@/components/Seat.vue";
 import axios from "@/plugins/axios";
 
 const route = useRoute();
+const router = useRouter();
 const seats = ref([]);
 const selectedSeat = ref(null);
 const concertId = route.params.concertId;
+const isInQueue = ref(false); // 대기열 여부
+const queuePosition = ref(-1); // 대기열 위치
+const nextSeatsUrl = ref(""); // 좌석 조회를 위한 URL
+const queueCheckInterval = 3000; // 대기열 조회 간격(ms)
 
 const seatPrice = 10000;
 
@@ -57,6 +70,7 @@ const totalPrice = computed(() => {
   return selectedSeat.value ? seatPrice : 0;
 });
 
+// 좌석 조회 함수
 async function fetchSeats() {
   try {
     const response = await axios.get(`/concerts/${concertId}/seats`);
@@ -65,8 +79,49 @@ async function fetchSeats() {
       seatNumber: seat.seatNumber,
       isReserved: seat.isReserved,
     }));
+    isInQueue.value = false; // 대기열이 아닌 상태로 전환
   } catch (error) {
-    console.error("Failed to fetch seats:", error);
+    if (error.response?.status === 429) {
+      handleQueueError(error.response.data.message);
+    } else {
+      console.error("Failed to fetch seats:", error);
+    }
+  }
+}
+
+// 대기열 처리 함수
+function handleQueueError(message) {
+  const queueUrl = extractQueueUrl(message);
+  if (queueUrl) {
+    isInQueue.value = true;
+    checkQueuePosition(queueUrl);
+  } else {
+    console.error("Failed to extract queue URL from message:", message);
+  }
+}
+
+// 대기열 URL 파싱
+function extractQueueUrl(message) {
+  const regex = /\/concerts\/\d+\/queue/;
+  const match = message.match(regex);
+  return match ? match[0] : null;
+}
+
+// 대기열 위치 확인 함수
+async function checkQueuePosition(queueUrl) {
+  try {
+    const response = await axios.get(queueUrl);
+    const data = response.data.data;
+    queuePosition.value = data.position;
+
+    if (queuePosition.value === 0) {
+      nextSeatsUrl.value = data.url;
+      fetchSeats(); // 대기열이 끝나면 좌석 조회 재시도
+    } else {
+      setTimeout(() => checkQueuePosition(queueUrl), queueCheckInterval);
+    }
+  } catch (error) {
+    console.error("Failed to fetch queue position:", error);
   }
 }
 
@@ -98,7 +153,7 @@ async function bookSeats() {
     });
     alert("예약이 완료되었습니다.");
     selectedSeat.value = null;
-    fetchSeats();
+    router.push("/"); // 메인 화면으로 리다이렉트
   } catch (error) {
     console.error("Failed to book seat:", error);
   }
@@ -275,4 +330,40 @@ onMounted(fetchSeats);
   margin: 0 auto 20px; /* 수평 가운데 정렬 및 아래 여백 */
 }
 
+/* 대기열 메시지 스타일 */
+.queue-message {
+  text-align: center;
+  font-size: 18px;
+  color: #d9a66c;
+}
+
+/* 대기열 모달 스타일 */
+.queue-modal {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 400px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+  text-align: center;
+}
+
+.queue-modal h2 {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #d9a66c;
+}
+
+.queue-modal p {
+  font-size: 16px;
+  margin: 5px 0;
+  color: #555;
+}
 </style>

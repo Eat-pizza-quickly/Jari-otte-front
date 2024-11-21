@@ -1,4 +1,4 @@
-// Seat.vue
+
 <template>
   <div
     :class="['seat', isReserved ? 'reserved' : (isSelected ? 'selected' : 'available')]"
