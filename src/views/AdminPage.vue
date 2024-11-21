@@ -39,7 +39,7 @@ export default {
       this.$router.push({ name: 'login' });
     } else {
       // 토큰이 있으면 axios 인스턴스에 토큰 설정
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
   },
 };
