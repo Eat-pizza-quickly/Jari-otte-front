@@ -168,7 +168,7 @@ const fetchUserInfo = async () => {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('토큰이 없습니다.')
 
-    const response = await api.get('/user', {
+    const response = await api.get('/users', {
       headers: { Authorization: `Bearer ${token}` }
     })
     // 여기서 사용자 정보를 상태 관리 라이브러리(예: Pinia)에 저장하거나
