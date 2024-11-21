@@ -1,12 +1,19 @@
 <template>
   <div class="my-page-container">
+    <div v-if="isLoading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+    </div>
     <div class="my-page">
       <h1>마이 페이지</h1>
       <div class="button-container">
-        <button @click="activeSection = 'user'" :class="{ active: activeSection === 'user' }">회원 정보</button>
-        <button @click="activeSection = 'coupons'" :class="{ active: activeSection === 'coupons' }">쿠폰</button>
-        <button @click="activeSection = 'reservations'" :class="{ active: activeSection === 'reservations' }">예매 내역</button>
-        <button @click="activeSection = 'payments'" :class="{ active: activeSection === 'payments' }">결제 내역</button>
+        <button
+          v-for="section in sections"
+          :key="section.value"
+          @click="activeSection = section.value"
+          :class="{ active: activeSection === section.value }"
+        >
+          {{ section.label }}
+        </button>
       </div>
 
       <!-- 사용자 정보 섹션 -->
@@ -119,8 +126,8 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
-import axios from 'axios';
 import { useRouter, useRoute } from 'vue-router';
+import axios from 'axios';
 
 const router = useRouter();
 const route = useRoute();
@@ -136,6 +143,7 @@ const paymentPage = ref(1);
 const paymentTotalPages = ref(1);
 const reservationFilter = ref('all');
 const paymentFilter = ref('all');
+const isLoading = ref(false);
 
 const API_BASE_URL = 'https://api.jariotte.store/api/v1';
 
@@ -162,10 +170,8 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// 토큰 갱신
 const refreshToken = async () => {
   try {
-    // refreshToken을 쿠키에서 자동으로 가져가도록 설정
     const response = await api.post('/auth/refresh');
     const newToken = response.data.accessToken;
     localStorage.setItem('token', newToken);
@@ -208,65 +214,71 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      return new Promise((resolve, reject) => {
-        refreshToken()
-          .then(token => {
-            originalRequest.headers['Authorization'] = 'Bearer ' + token;
-            processQueue(null, token);
-            resolve(api(originalRequest));
-          })
-          .catch(err => {
-            processQueue(err, null);
-            reject(err);
-          })
-          .finally(() => {
-            isRefreshing = false;
-          });
-      });
+      try {
+        const newToken = await refreshToken();
+        processQueue(null, newToken);
+        originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
-    console.error('API Error:', error);
-    if (error.response) {
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-      console.error('Response headers:', error.response.headers);
-    } else if (error.request) {
-      console.error('No response received:', error.request);
-    } else {
-      console.error('Error setting up request:', error.message);
-    }
     return Promise.reject(error);
   }
 );
 
 const tossPayments = ref(null);
 
-onMounted(async () => {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+const handleApiError = (error, context) => {
+  console.error(`Error in ${context}:`, error);
+  if (error.response) {
+    console.error(error.response.data);
+    console.error(error.response.status);
+    console.error(error.response.headers);
+  } else if (error.request) {
+    console.error(error.request);
+  } else {
+    console.error('Error', error.message);
+  }
+};
 
+const fetchData = async (fetchFunction) => {
+  isLoading.value = true;
+  try {
+    await fetchFunction();
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    router.push('/login');
+    return;
+  }
+
+  await fetchData(async () => {
     await fetchUserInfo();
     await loadTossPaymentsSDK();
     await fetchPayments();
 
-    const { paymentKey, orderId, amount } = route.query;
+    const { paymentKey, orderId, amount, code, message } = route.query;
+
     if (paymentKey && orderId && amount) {
       await handlePaymentSuccess(paymentKey, orderId, amount);
+    } else if (code && message && orderId) {
+      await handlePaymentFail({ code, message, orderId });
     }
-  } catch (error) {
-    console.error('초기화 중 오류 발생:', error);
-    if (error.response && error.response.status === 401) {
-      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
-      router.push('/login');
-    }
-  }
+  });
 });
 
-// Toss Payments SDK 초기화
 const loadTossPaymentsSDK = () => {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -290,8 +302,7 @@ const fetchUserInfo = async () => {
     const { data } = await api.get('/users/my');
     user.value = data.data;
   } catch (error) {
-    console.error('사용자 정보 가져오기 실패:', error);
-    handleApiError(error);
+    handleApiError(error, 'fetchUserInfo');
   }
 };
 
@@ -301,7 +312,7 @@ const updateUser = async () => {
     alert('회원 정보가 수정되었습니다.');
     user.value = data.data;
   } catch (error) {
-    console.error('사용자 정보 업데이트 실패:', error);
+    handleApiError(error, 'updateUser');
     if (error.response) {
       alert(`회원 정보 수정에 실패했습니다. 서버 응답: ${error.response.data?.message || error.response.status}`);
     } else if (error.request) {
@@ -309,7 +320,6 @@ const updateUser = async () => {
     } else {
       alert(`회원 정보 수정 중 오류가 발생했습니다: ${error.message}`);
     }
-    handleApiError(error);
   }
 };
 
@@ -318,8 +328,7 @@ const fetchCoupons = async () => {
     const { data } = await api.get('/coupons/my-coupon');
     coupons.value = data.data;
   } catch (error) {
-    console.error('쿠폰 정보 가져오기 실패:', error);
-    handleApiError(error);
+    handleApiError(error, 'fetchCoupons');
   }
 };
 
@@ -341,8 +350,7 @@ const fetchReservations = async () => {
     reservationTotalPages.value = data.data.totalPages;
     reservationTotalCount.value = data.data.totalElements;
   } catch (error) {
-    console.error('예약 정보 가져오기 실패:', error);
-    handleApiError(error);
+    handleApiError(error, 'fetchReservations');
   }
 };
 
@@ -365,8 +373,7 @@ const fetchPayments = async () => {
     payments.value = paymentsWithTitles;
     paymentTotalPages.value = data.data.totalPages;
   } catch (error) {
-    console.error('결제 정보 가져오기 실패:', error);
-    handleApiError(error);
+    handleApiError(error, 'fetchPayments');
   }
 };
 
@@ -397,13 +404,6 @@ const formatDate = (dateString) => {
   });
 };
 
-const handleApiError = async (error) => {
-  if (error.response?.status === 401) {
-    router.push('/auth');
-  }
-  return Promise.reject(error);
-};
-// 토스페이먼츠 API로 결제 상태 확인
 const checkTossPayment = async (paymentKey) => {
   try {
     const tossResponse = await axios.get(
@@ -420,7 +420,7 @@ const checkTossPayment = async (paymentKey) => {
     return null;
   }
 };
-// 결제 요청
+
 const requestTossPayment = async (reservation) => {
   try {
     if (!tossPayments.value) {
@@ -440,7 +440,6 @@ const requestTossPayment = async (reservation) => {
       throw new Error('결제 요청 정보가 올바르지 않습니다.');
     }
 
-    // 결제창 호출
     await tossPayments.value.requestPayment('카드', {
       amount: response.data.amount,
       orderId: response.data.orderId,
@@ -463,15 +462,13 @@ const requestTossPayment = async (reservation) => {
     alert(errorMessage);
   }
 };
-// 결제 성공 처리
+
 const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
-  let tossPayment = null;  // tossPayment 변수 선언
+  let tossPayment = null;
 
   try {
-    // 1. 결제 상태 확인
     tossPayment = await checkTossPayment(paymentKey);
 
-    // 2. 백엔드에 결제 승인 요청
     const response = await api.get('/payments/toss/success', {
       params: {
         paymentKey,
@@ -483,7 +480,6 @@ const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
     console.log('Payment success response:', response.data);
 
     if (tossPayment?.status === 'DONE') {
-      // 토스 결제는 성공했으나 백엔드 처리 실패한 경우
       if (response.data.includes('error')) {
         alert('결제는 완료되었으나 처리 중 문제가 발생했습니다. 고객센터에 문의해주세요.');
       } else if (response.data.includes('success')) {
@@ -492,7 +488,6 @@ const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
         throw new Error('알 수 없는 응답입니다.');
       }
 
-      // 상태 갱신
       activeSection.value = 'reservations';
       await Promise.allSettled([
         fetchReservations(),
@@ -523,21 +518,18 @@ const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
 
     alert(errorMessage);
 
-    // 상태 갱신 시도
     try {
       await refreshReservations();
     } catch (refreshError) {
       console.error('예매 내역 갱신 실패:', refreshError);
     }
   } finally {
-    // URL 파라미터 제거
     if (route.path === '/mypage') {
       router.replace({ query: {} });
     }
   }
 };
 
-// 결제 실패 처리
 const handlePaymentFail = async (error) => {
   try {
     if (error.code && error.message && error.orderId) {
@@ -559,6 +551,7 @@ const handlePaymentFail = async (error) => {
     await refreshReservations();
   }
 };
+
 const refreshReservations = async () => {
   reservationPage.value = 1;
   await fetchReservations();
@@ -571,76 +564,7 @@ const getCouponTypeText = (type) => {
   };
   return types[type] || type;
 };
-// API 인터셉터 수정
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
 
-    if (error.response.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers['Authorization'] = 'Bearer ' + token;
-          return api(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const newToken = await refreshToken();
-        processQueue(null, newToken);
-        originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
-        return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
-
-
-// onMounted 수정
-onMounted(async () => {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    await fetchUserInfo();
-    await loadTossPaymentsSDK();
-    await fetchPayments();
-
-    // URL 파라미터 확인
-    const { paymentKey, orderId, amount, code, message } = route.query;
-
-    // 결제 성공 또는 실패 처리
-    if (paymentKey && orderId && amount) {
-      await handlePaymentSuccess(paymentKey, orderId, amount);
-    } else if (code && message && orderId) {
-      await handlePaymentFail({ code, message, orderId });
-    }
-  } catch (error) {
-    console.error('초기화 중 오류 발생:', error);
-    if (error.response?.status === 401) {
-      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
-      router.push('/login');
-    }
-  }
-});
-// watch 효과 추가
 watch(activeSection, (newSection) => {
   if (newSection === 'user') fetchUserInfo();
   else if (newSection === 'coupons') fetchCoupons();
@@ -672,14 +596,6 @@ const getReservationStatusText = (status) => {
   return statuses[status] || status;
 };
 
-watch(activeSection, (newSection) => {
-  if (newSection === 'user') fetchUserInfo();
-  else if (newSection === 'coupons') fetchCoupons();
-  else if (newSection === 'reservations') fetchReservations();
-  else if (newSection === 'payments') fetchPayments();
-});
-
-// computed 속성들
 const filteredReservations = computed(() => {
   if (reservationFilter.value === 'pending') {
     return reservations.value.filter(reservation => reservation.status === 'PENDING');
@@ -694,13 +610,12 @@ const filteredPayments = computed(() => {
   return payments.value.filter(payment => payment.payStatus === paymentFilter.value);
 });
 
-// watch 효과
-watch(activeSection, (newSection) => {
-  if (newSection === 'user') fetchUserInfo();
-  else if (newSection === 'coupons') fetchCoupons();
-  else if (newSection === 'reservations') fetchReservations();
-  else if (newSection === 'payments') fetchPayments();
-});
+const sections = [
+  { value: 'user', label: '회원 정보' },
+  { value: 'coupons', label: '쿠폰' },
+  { value: 'reservations', label: '예매 내역' },
+  { value: 'payments', label: '결제 내역' }
+];
 </script>
 
 <style scoped>
@@ -959,33 +874,14 @@ input {
 }
 
 .pagination button:disabled {
-  background-color: #ddd;
+  background-color: #ccc;
   cursor: not-allowed;
-}
-
-.pagination button:hover:not(:disabled) {
-  background-color: #c08b50;
 }
 
 .empty-message {
   text-align: center;
   color: #666;
-  padding: 20px;
-}
-
-.payment-button {
-  margin-top: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.payment-button:hover {
-  background-color: #45a049;
+  padding: 2rem 0;
 }
 
 .filter-buttons {
@@ -996,33 +892,48 @@ input {
 }
 
 .filter-buttons button {
-  padding: 0.5rem 1.5rem;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  color: #666;
-  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  border: 1px solid #D9A66C;
+  border-radius: 4px;
+  color: #333;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .filter-buttons button.active {
   background-color: #D9A66C;
-  border-color: #D9A66C;
   color: white;
 }
 
-@media (max-width: 768px) {
-  .my-page-container {
-    padding: 1rem;
-  }
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
 
-  .button-container {
-    flex-wrap: wrap;
-  }
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #D9A66C;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
 
-  .button-container button {
-    flex: 1 1 calc(50% - 0.5rem);
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 </style>
