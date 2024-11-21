@@ -67,7 +67,7 @@
                 <span>좌석: {{ reservation.seatId }}</span>
                 <span class="item-price">{{ reservation.price.toLocaleString() }}원</span>
               </div>
-              <button v-if="reservation.status === 'PENDING'" @click="requestTossPayment(reservation)" class="payment-button">
+              <button v-if="reservation.reservationStatus === 'PENDING'" @click="requestTossPayment(reservation)" class="payment-button">
                 결제 진행
               </button>
             </div>
@@ -385,7 +385,6 @@ const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
   }
 };
 
-
 const refreshReservations = async () => {
   reservationPage.value = 1;
   await fetchReservations();
@@ -423,7 +422,7 @@ watch(activeSection, (newSection) => {
 
 const filteredReservations = computed(() => {
   if (reservationFilter.value === 'pending') {
-    return reservations.value.filter(reservation => reservation.status === 'PENDING');
+    return reservations.value.filter(reservation => reservation.reservationStatus === 'PENDING');
   }
   return reservations.value;
 });
@@ -435,7 +434,6 @@ const filteredPayments = computed(() => {
   return payments.value.filter(payment => payment.payStatus === paymentFilter.value);
 });
 </script>
-
 <style scoped>
 .my-page-container {
   min-height: 100vh;
