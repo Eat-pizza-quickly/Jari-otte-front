@@ -12,13 +12,12 @@ const router = createRouter({
       name: 'ConcertCategoryView',
       component: ConcertCategoryView,
       props: true, // sidecategory를 props로 전달
-      meta: {requiresAuth: true}
     },
     {
       path: '/admin/coupons',
       name: 'couponPage',
       component: CouponPage,
-      meta: {requiresAuth: true, requiresAdminHeader: true}
+      meta: { requiresAdminHeader: true}
     },
     {
       path: '/',
@@ -36,19 +35,19 @@ const router = createRouter({
       path: '/concert-create',
       name: 'concertCreate',
       component: ConcertCreate,
-      meta: {requiresHeader: true, requiresAuth: true}
+      meta: {requiresHeader: true}
     },
     {
       path: '/venue-create',
       name: 'venueCreate',
       component: VenueCreate,
-      meta: {requiresHeader: true, requiresAuth: true}
+      meta: {requiresHeader: true}
     },
     {
       path: '/admin',
       name: 'adminPage',
       component: AdminPage,
-      meta: {requiresAuth: true}
+      meta: {requiresAdminAuth: true}
     },
     {
       path: '/concerts/:concertId/seat',
@@ -116,7 +115,7 @@ router.beforeEach((to, from, next) => {
   }
 
   // 인증이 필요한 페이지에 대한 처리
-  if (to.meta.requiresAuth) {
+  if (to.meta.requiresAdminAuth) {
     const token = localStorage.getItem('token')
 
     if (token) {
@@ -138,6 +137,28 @@ router.beforeEach((to, from, next) => {
       }
     } else {
       next({name: 'adminLogin'})
+    }
+  } else if (to.meta.requiresUserAuth) {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const decodedToken = VueJwtDecode.decode(token)
+        const currentTime = Math.floor(Date.now() / 1000)
+
+        if (decodedToken.exp && decodedToken.exp < currentTime) {
+          localStorage.removeItem('token')
+          next({name: 'auth'})
+        } else if (decodedToken.userRole === 'USER' || decodedToken.user === 'HOST' || decodedToken.user === 'ADMIN') {
+          next()
+        } else {
+          next({name: 'auth'})
+        }
+      } catch (error) {
+        localStorage.removeItem('token')
+        next({name: 'auth'})
+      }
+    } else {
+      next({name: 'auth'})
     }
   } else {
     next()

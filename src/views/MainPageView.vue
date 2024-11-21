@@ -188,9 +188,18 @@ const sidecategoryList = ref([
 // 카테고리 클릭 시 해당 뷰로 이동하는 함수
 // 카테고리 데이터 로드 함수
 const goToSidecategory = (sidecategoryName) => {
-  selectedSidecategory.value = sidecategoryName
+  if (!sidecategoryName) {
+    console.error('Sidecategory name is missing!');
+    return;
+  }
+
+  // 선택된 카테고리 업데이트
+  selectedSidecategory.value = sidecategoryName;
+
+  // 라우터 이동
   router.push({ name: 'ConcertCategoryView', params: { sidecategory: sidecategoryName } })
-}
+    .catch((err) => console.error('Navigation error:', err));
+};
 // 추천 리스트 가져오기 함수 (API 통신)
 const fetchSuggestions = async (query) => {
   if (!query.trim()) {
@@ -677,18 +686,15 @@ onUnmounted(() => {
   flex: 0 0 100%; /* 아이템이 부모의 100% 차지 */
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
   text-align: center; /* 텍스트 중앙 정렬 */
   padding: 20px;
 }
 
 .slider-item.inactive {
-  cursor: not-allowed;
   opacity: 0.5; /* 흐리게 처리 */
   pointer-events: none; /* 클릭 방지 */
 }
-
 /* 큰 포스터 스타일 */
 .poster {
   width: 400px;
@@ -733,13 +739,11 @@ onUnmounted(() => {
 /* 하단 순위 목록 */
 .bottom-ranking {
   display: flex;
-  flex-wrap: wrap; /* 화면 크기에 따라 줄바꿈 */
-  justify-content: center; /* 중앙 정렬 */
-  gap: 0px; /* 포스터 간 간격 */
+  flex-wrap: wrap; /* 줄바꿈 허용 */
+  justify-content: space-between; /* 간격 균등 배치 */
+  gap: 20px; /* 항목 간 간격 */
   padding: 20px 0;
-  margin-top: 40px; /* 상단과 간격 증가 */
 }
-
 /* 하단 순위 항목 */
 .bottom-ranking li {
   display: flex;
@@ -759,8 +763,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #888;
-  font-size: 16px;
+}
+.small-poster img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
 }
 
 .category-info p {
@@ -773,6 +780,7 @@ onUnmounted(() => {
   color: #555;
   line-height: 1.6; /* 줄 간격 */
 }
+
 
 /* 슬라이더와 하단 간격 */
 .popular-categories {
@@ -892,7 +900,6 @@ onUnmounted(() => {
   text-align: center; /* 텍스트 중앙 정렬 */
   padding: 20px;
 }
-
 .slider-item.inactive {
   cursor: not-allowed;
   opacity: 0.5; /* 흐리게 처리 */
@@ -916,6 +923,7 @@ onUnmounted(() => {
   max-width: 100%;
   max-height: 100%;
   object-fit: cover;
+  border-radius: 8px; /* 둥근 모서리 추가 */
 }
 
 /* 텍스트 정보 */

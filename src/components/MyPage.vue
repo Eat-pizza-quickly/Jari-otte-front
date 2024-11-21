@@ -85,7 +85,8 @@
         </div>
         <div v-else class="empty-message">예매 내역이 없습니다.</div>
         <div v-if="filteredReservations.length > 0" class="pagination">
-          <button @click="changePage('reservations', -1)" :disabled="reservationPage === 1">이전</button>
+          <button @click="changePage('reservations', -1)"
+                  :disabled="reservationPage === 1">이전</button>
           <span>{{ reservationPage }} / {{ reservationTotalPages }}</span>
           <button @click="changePage('reservations', 1)" :disabled="reservationPage === reservationTotalPages">다음</button>
         </div>
@@ -333,9 +334,10 @@ const fetchCoupons = async () => {
 };
 
 const fetchReservations = async () => {
+  isLoading.value = true; // 로딩 표시 활성화
   try {
     const { data } = await api.get('/reservations', {
-      params: { page: reservationPage.value - 1, size: 4 },
+      params: { page: reservationPage.value , size: 5 },
     });
     reservations.value = data.data.content.map(reservation => ({
       reservationId: reservation.reservationId,
@@ -351,6 +353,8 @@ const fetchReservations = async () => {
     reservationTotalCount.value = data.data.totalElements;
   } catch (error) {
     handleApiError(error, 'fetchReservations');
+  }finally {
+    isLoading.value = false;
   }
 };
 
