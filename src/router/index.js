@@ -11,6 +11,7 @@ const router = createRouter({
       path: '/category/:sidecategory',
       name: 'ConcertCategoryView',
       component: ConcertCategoryView,
+      props: true, // sidecategory를 props로 전달
       meta: {requiresAuth: true}
     },
     {

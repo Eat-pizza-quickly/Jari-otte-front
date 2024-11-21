@@ -9,7 +9,12 @@
       <div v-if="loading">로딩 중...</div>
       <div v-if="concertList.length === 0 && !loading">조회된 결과가 없습니다.</div>
       <div v-else class="concert-list-wrapper">
-        <div v-for="(concert, index) in concertList" :key="concert.concertId ? concert.concertId : `concert-${index}`" class="concert-item">
+        <div
+          v-for="(concert, index) in concertList"
+          :key="concert.concertId ? concert.concertId : `concert-${index}`"
+          class="concert-item"
+          @click="goToConcertDetail(concert.concertId)"
+        >
           <img :src="concert.thumbnailUrl" alt="콘서트 포스터" class="concert-thumbnail" v-if="concert.thumbnailUrl" />
           <h3>{{ concert.title }}</h3>
           <p>공연 날짜: {{ formatDate(concert.performDate) }}</p>
@@ -23,7 +28,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from '@/plugins/axios'
 
 // LoginHeader 컴포넌트 임포트
@@ -31,6 +36,7 @@ import LoginHeader from '@/components/LoginHeader.vue'
 
 // 라우터에서 파라미터 가져오기
 const route = useRoute()
+const router = useRouter()
 const selectedSidecategory = ref(route.params.sidecategory) // 선택된 카테고리
 
 // 상태 정의
@@ -58,6 +64,15 @@ const fetchConcertData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 상세 페이지로 이동하는 함수
+const goToConcertDetail = (concertId) => {
+  if (!concertId) {
+    console.warn('콘서트 ID가 없습니다.')
+    return
+  }
+  router.push({ name: 'concert', params: { concertId } }) // 상세 페이지로 이동
 }
 
 // 컴포넌트가 마운트될 때 데이터 로드
@@ -91,6 +106,7 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
   text-align: left;
+  cursor: pointer; /* 클릭 가능하다는 것을 시각적으로 표시 */
 }
 
 .concert-item:hover {
