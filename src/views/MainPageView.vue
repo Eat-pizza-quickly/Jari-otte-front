@@ -5,13 +5,17 @@
       <aside class="sidebar">
         <nav>
           <ul>
-            <li v-for="(category, index) in categories" :key="category" :class="{ active: index === 0 }">
-              {{ category }}
+            <li
+              v-for="sidecategory in sidecategoryList"
+              :key="`${sidecategory.id}-${sidecategory.name}`"
+            :class="{ active: selectedSidecategory === sidecategory.name }"
+            @click="goToSidecategory(sidecategory.name)"
+            >
+            {{ sidecategory.name }}
             </li>
           </ul>
         </nav>
       </aside>
-
       <!-- 메인 콘텐츠 -->
       <main class="main-content">
         <!-- 검색바 -->
@@ -37,12 +41,12 @@
           <!-- 추천 리스트 -->
           <ul v-if="showSuggestions && suggestions.length > 0" class="suggestions-list">
             <li
-              v-for="suggestion in suggestions"
-              :key="suggestion.auto"
-              @click="selectSuggestion(suggestion.auto)"
-              class="suggestion-item"
+              v-for="(suggestion, index) in suggestions"
+              :key="`${suggestion.auto}-${index}`"
+            @click="selectSuggestion(suggestion.auto)"
+            class="suggestion-item"
             >
-              {{ suggestion.auto }}
+            {{ suggestion.auto }}
             </li>
           </ul>
 
@@ -63,10 +67,10 @@
               <div class="slider-track" :style="{ transform: `translateX(-${popularCurrentSlide * 100}%)` }">
                 <div
                   v-for="(concert, index) in popularCategories.slice(0, 5)"
-                  :key="concert.concertId || index"
-                  class="slider-item"
-                  :class="{ 'inactive': !concert.title }"
-                  @click="concert.title && goToConcertDetail(concert.concertId)"
+                  :key="concert.concertId ? concert.concertId : `popular-${index}`"
+                class="slider-item"
+                :class="{ 'inactive': !concert.title }"
+                @click="concert.title && goToConcertDetail(concert.concertId)"
                 >
                   <div class="poster">
                     <img :src="concert.thumbnailUrl || ''" alt="포스터" class="poster-image" v-if="concert.thumbnailUrl" />
@@ -88,9 +92,9 @@
           <ul class="bottom-ranking">
             <li
               v-for="(concert, index) in popularCategories.slice(5, 10)"
-              :key="concert.concertId || index"
-              :class="{ 'inactive': !concert.title }"
-              @click="concert.title && goToConcertDetail(concert.concertId)"
+              :key="concert.concertId ? concert.concertId : `bottom-${index}`"
+            :class="{ 'inactive': !concert.title }"
+            @click="concert.title && goToConcertDetail(concert.concertId)"
             >
               <!-- 작은 포스터 -->
               <div class="small-poster">
@@ -132,9 +136,9 @@
           <!-- 공연 카드 -->
           <div
             class="event-card"
-            v-for="event in events"
-            :key="event.id || event.title"
-            @click="goToConcertDetail(event.id)"
+            v-for="(event, index) in events"
+            :key="event.id ? event.id : `event-${index}`"
+          @click="goToConcertDetail(event.id)"
           >
             <!-- 포스터 이미지 -->
             <div class="event-image">
@@ -172,8 +176,21 @@ const searchQuery = ref('') // 검색 입력값
 const suggestions = ref([]) // 추천 리스트
 const isLoading = ref(false) // 로딩 상태
 const showSuggestions = ref(false) // 추천 리스트 표시 여부
-const router = useRouter() // 라우터 사용
+const router = useRouter()
 
+const selectedSidecategory = ref(null)
+const sidecategoryList = ref([
+  { id: 1, name: 'CONCERT' },
+  { id: 2, name: 'MUSICAL' },
+  { id: 3, name: 'THEATER' },
+  { id: 4, name: 'ESPORT' }
+])
+// 카테고리 클릭 시 해당 뷰로 이동하는 함수
+// 카테고리 데이터 로드 함수
+const goToSidecategory = (sidecategoryName) => {
+  selectedSidecategory.value = sidecategoryName
+  router.push({ name: 'ConcertCategoryView', params: { sidecategory: sidecategoryName } })
+}
 // 추천 리스트 가져오기 함수 (API 통신)
 const fetchSuggestions = async (query) => {
   if (!query.trim()) {
@@ -927,5 +944,15 @@ onUnmounted(() => {
 
 .slider-button.right {
   right: 10px; /* 오른쪽 버튼 */
+}
+.active {
+  font-weight: bold;
+  color: blue;
+}
+.category-results {
+  margin-top: 20px;
+}
+.concert-item {
+  margin-bottom: 10px;
 }
 </style>
