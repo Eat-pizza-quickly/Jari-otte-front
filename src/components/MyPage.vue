@@ -398,20 +398,6 @@ const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
   }
 };
 
-const handlePaymentFailure = (code, message) => {
-  console.error('Payment failed:', { code, message });
-  let errorMessage = '결제에 실패했습니다.';
-
-  if (code === 'USER_CANCEL') {
-    errorMessage = '사용자에 의해 결제가 취소되었습니다.';
-  } else if (message) {
-    errorMessage += ` 오류: ${message}`;
-  }
-
-  alert(errorMessage);
-  router.push('/payment/error');
-};
-
 const refreshReservations = async () => {
   reservationPage.value = 1;
   await fetchReservations();
