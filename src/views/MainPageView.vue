@@ -403,6 +403,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+
 /* 페이지 전체 레이아웃 */
 .page {
   all: unset; /* 글로벌 스타일 초기화 */
@@ -842,5 +843,89 @@ onUnmounted(() => {
 .footer a {
   color: #555;
   text-decoration: none;
+}
+
+.slider-wrapper {
+  position: relative;
+  overflow: hidden;
+  width: 60%;
+  max-width: 1400px; /* 슬라이더 최대 너비 */
+  margin: 0 auto; /* 중앙 정렬 */
+}
+
+.slider-view {
+  position: relative;
+  width: 100%; /* 부모의 전체 너비 */
+  overflow: hidden; /* 넘치는 콘텐츠 숨김 */
+}
+
+.slider-track {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+  transform: translateX(0); /* 초기 위치 */
+  gap: 0; /* 아이템 간 간격 제거 */
+}
+
+.slider-item {
+  flex: 0 0 100%; /* 아이템이 부모의 100% 차지 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center; /* 텍스트 중앙 정렬 */
+  padding: 20px;
+}
+
+.slider-item.inactive {
+  cursor: not-allowed;
+  opacity: 0.5; /* 흐리게 처리 */
+  pointer-events: none; /* 클릭 방지 */
+}
+
+/* 큰 포스터 스타일 */
+.poster {
+  width: 500px;
+  height: 650px;
+  background-color: #f0f0f0;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 18px;
+}
+
+.poster img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+
+/* 텍스트 정보 */
+.category-info {
+  font-size: 18px;
+  color: #333;
+  line-height: 1.6; /* 줄 간격 */
+}
+
+/* 버튼 */
+.slider-button {
+  position: absolute;
+  top: 36%;
+  background: white;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 10px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* 버튼 그림자 */
+  z-index: 10;
+}
+
+.slider-button.left {
+  left: 10px; /* 왼쪽 버튼 */
+}
+
+.slider-button.right {
+  right: 10px; /* 오른쪽 버튼 */
 }
 </style>

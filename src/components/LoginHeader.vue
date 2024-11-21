@@ -6,13 +6,17 @@
       <span class="logo-text">Jari-Otte</span>
     </div>
 
+    <!-- 토큰 만료 시간 표시 -->
+    <div v-if="isLoggedIn" class="token-expiry">
+      만료 시간: {{ Math.floor(remainingTime / 60) }}분 {{ remainingTime % 60 }}초
+    </div>
+
     <!-- 사용자 메뉴 -->
     <nav class="user-menu">
       <ul>
-        <li>
-          <a href="#" @click.prevent="handleLoginLogout">
-            {{ isLoggedIn ? '로그아웃' : '로그인' }}
-          </a>
+        <li style="margin-right: 30px;"><a href="#" @click.prevent="handleLoginLogout">
+          {{ isLoggedIn ? '로그아웃' : '로그인' }}
+        </a>
         </li>
         <li v-if="isLoggedIn"><a href="#" @click.prevent="navigateToMyPage">마이 페이지</a></li>
         <li v-if="!isLoggedIn"><a href="#" @click.prevent="handleAdminLogin">관리자 로그인</a></li>
@@ -22,11 +26,70 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 const isLoggedIn = ref(!!localStorage.getItem('token')); // 초기값은 로컬 스토리지 확인
+const remainingTime = ref(0);
 const router = useRouter();
+let intervalId = null;
+
+// 토큰 만료 시간 확인 함수
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (e) {
+    return true; // 토큰이 유효하지 않으면 만료된 것으로 간주
+  }
+};
+
+// 남은 만료 시간 계산 함수
+const calculateRemainingTime = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp - currentTime;
+  } catch (e) {
+    return 0;
+  }
+};
+
+// 로그인 상태 및 만료 시간 자동 체크
+watch(isLoggedIn, (newValue) => {
+  const token = localStorage.getItem('token');
+  if (newValue && token && !isTokenExpired(token)) {
+    remainingTime.value = calculateRemainingTime(token);
+    startRemainingTimeCountdown();
+  } else {
+    clearInterval(intervalId);
+    remainingTime.value = 0;
+  }
+});
+
+// 남은 시간 카운트다운 시작 함수
+const startRemainingTimeCountdown = () => {
+  clearInterval(intervalId);
+  intervalId = setInterval(() => {
+    if (remainingTime.value > 0) {
+      remainingTime.value -= 1;
+    } else {
+      isLoggedIn.value = false;
+      clearInterval(intervalId);
+    }
+  }, 1000);
+};
+
+// 컴포넌트가 마운트될 때 실행
+onMounted(() => {
+  const token = localStorage.getItem('token');
+  if (token && !isTokenExpired(token)) {
+    isLoggedIn.value = true;
+    remainingTime.value = calculateRemainingTime(token);
+    startRemainingTimeCountdown();
+  }
+});
 
 // 로그인/로그아웃 처리 함수
 const handleLoginLogout = () => {
@@ -101,6 +164,12 @@ body {
 .logo-text {
   font-family: 'Arial', sans-serif;
   color: #333;
+}
+
+.token-expiry {
+  font-size: 14px;
+  color: #333;
+  margin-right: 20px;
 }
 
 .search-bar {
