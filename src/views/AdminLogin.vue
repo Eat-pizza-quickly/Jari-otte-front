@@ -27,6 +27,7 @@
 </template>
 
 <script>
+import axios from "@/plugins/axios";
 export default {
   data() {
     return {
@@ -55,7 +56,7 @@ export default {
       }
 
       try {
-        const response = await this.$store.dispatch('/users/login', {
+        const response = await axios.post('/users/login', {
           email: this.email,
           password: this.password,
         })
