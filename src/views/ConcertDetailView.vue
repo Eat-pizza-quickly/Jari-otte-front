@@ -14,6 +14,7 @@ const concertDetail = ref({
   description: '',
   artists: '',
   seatCount: 0,
+  performDate:'',
   startDate: '',
   endDate: '',
   thumbnailUrl: '',
@@ -159,8 +160,9 @@ onMounted(() => {
       <ul class="info-list">
         <li><strong>출연자:</strong> {{ concertDetail.artists }}</li>
         <li><strong>장소:</strong> {{ concertDetail.location }}</li>
-        <li><strong>공연 일자:</strong> {{ formatDate(concertDetail.startDate) }}</li>
-        <li><strong>예매 기간:</strong> {{ formatDate(concertDetail.endDate) }}</li>
+        <li><strong>공연 일자:</strong> {{ formatDate(concertDetail.performDate) }}</li>
+        <li><strong>예매 시작일:</strong> {{ formatDate(concertDetail.startDate) }}</li>
+        <li><strong>예매 종료일:</strong> {{ formatDate(concertDetail.endDate) }}</li>
       </ul>
       <!-- 수정하기 버튼 -->
       <button

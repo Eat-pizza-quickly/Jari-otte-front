@@ -286,7 +286,7 @@ const loadTossPaymentsSDK = () => {
     script.src = 'https://js.tosspayments.com/v1';
     script.onload = () => {
       if (typeof window.TossPayments !== 'undefined') {
-        const clientKey = 'test_ck_d46qopOB896o7NDMkGm73ZmM75y0';
+        const clientKey = 'test_ck_vZnjEJeQVxG6k9jZ7yZO3PmOoBN0';
         tossPayments.value = window.TossPayments(clientKey);
         resolve();
       } else {
@@ -414,7 +414,7 @@ const checkTossPayment = async (paymentKey) => {
       `https://api.tosspayments.com/v1/payments/${paymentKey}`,
       {
         headers: {
-          Authorization: `Basic ${btoa('test_sk_KNbdOvk5rkm6kdBBpzMz3n07xlzm:')}`
+          Authorization: `Basic ${btoa('test_sk_yZqmkKeP8g44q77Oj1ZK3bQRxB9l')}`
         }
       }
     );
@@ -467,7 +467,7 @@ const requestTossPayment = async (reservation) => {
   }
 };
 
-const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
+const handlePaymentSuccess = async (orderId, paymentKey, amount) => {
   let tossPayment = null;
 
   try {
