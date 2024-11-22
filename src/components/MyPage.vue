@@ -44,9 +44,11 @@
               </div>
               <div class="coupon-details">
                 <div class="discount-info">
-                  {{ coupon.discountType === 'PERCENTAGE'
-                  ? `${coupon.discount}% 할인`
-                  : `${coupon.price.toLocaleString()}원 할인` }}
+                  {{
+                    coupon.discountType === 'PERCENTAGE'
+                      ? `${coupon.discount}% 할인`
+                      : `${coupon.price.toLocaleString()}원 할인`
+                  }}
                 </div>
                 <div class="coupon-type">{{ getCouponTypeText(coupon.couponType) }}</div>
               </div>
@@ -63,7 +65,8 @@
         <h2>예매 내역</h2>
         <div class="filter-buttons">
           <button @click="reservationFilter = 'all'" :class="{ active: reservationFilter === 'all' }">전체</button>
-          <button @click="reservationFilter = 'pending'" :class="{ active: reservationFilter === 'pending' }">결제 대기중</button>
+          <button @click="reservationFilter = 'pending'" :class="{ active: reservationFilter === 'pending' }">결제 대기중
+          </button>
         </div>
         <div v-if="filteredReservations.length > 0" class="list-container">
           <div v-for="reservation in filteredReservations" :key="reservation.reservationId" class="list-item">
@@ -77,7 +80,8 @@
               <div class="reservation-status">
                 상태: {{ getReservationStatusText(reservation.status) }}
               </div>
-              <button v-if="reservation.status === 'PENDING'" @click="requestTossPayment(reservation)" class="payment-button">
+              <button v-if="reservation.status === 'PENDING'" @click="requestTossPayment(reservation)"
+                      class="payment-button">
                 결제 진행
               </button>
             </div>
@@ -86,9 +90,11 @@
         <div v-else class="empty-message">예매 내역이 없습니다.</div>
         <div v-if="filteredReservations.length > 0" class="pagination">
           <button @click="changePage('reservations', -1)"
-                  :disabled="reservationPage === 1">이전</button>
+                  :disabled="reservationPage === 1">이전
+          </button>
           <span>{{ reservationPage }} / {{ reservationTotalPages }}</span>
-          <button @click="changePage('reservations', 1)" :disabled="reservationPage === reservationTotalPages">다음</button>
+          <button @click="changePage('reservations', 1)" :disabled="reservationPage === reservationTotalPages">다음
+          </button>
         </div>
       </div>
 
@@ -98,7 +104,8 @@
         <div class="filter-buttons">
           <button @click="setPaymentFilter('all')" :class="{ active: paymentFilter === 'all' }">전체</button>
           <button @click="setPaymentFilter('PAID')" :class="{ active: paymentFilter === 'PAID' }">결제 완료</button>
-          <button @click="setPaymentFilter('CANCELLED')" :class="{ active: paymentFilter === 'CANCELLED' }">결제 취소</button>
+          <button @click="setPaymentFilter('CANCELLED')" :class="{ active: paymentFilter === 'CANCELLED' }">결제 취소
+          </button>
         </div>
         <div v-if="filteredPayments.length > 0" class="list-container">
           <div v-for="payment in filteredPayments" :key="payment.concertId" class="list-item">
@@ -126,14 +133,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import {ref, onMounted, watch, computed} from 'vue';
+import {useRouter, useRoute} from 'vue-router';
 import axios from 'axios';
 
 const router = useRouter();
 const route = useRoute();
 const activeSection = ref('user');
-const user = ref({ nickname: '', password: '', id: '' });
+const user = ref({nickname: '', password: '', id: ''});
 const coupons = ref([]);
 const reservations = ref([]);
 const payments = ref([]);
@@ -203,7 +210,7 @@ api.interceptors.response.use(
     if (error.response.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
+          failedQueue.push({resolve, reject});
         }).then(token => {
           originalRequest.headers['Authorization'] = 'Bearer ' + token;
           return api(originalRequest);
@@ -270,12 +277,12 @@ onMounted(async () => {
     await loadTossPaymentsSDK();
     await fetchPayments();
 
-    const { paymentKey, orderId, amount, code, message } = route.query;
+    const {paymentKey, orderId, amount, code, message} = route.query;
 
     if (paymentKey && orderId && amount) {
       await handlePaymentSuccess(paymentKey, orderId, amount);
     } else if (code && message && orderId) {
-      await handlePaymentFail({ code, message, orderId });
+      await handlePaymentFail({code, message, orderId});
     }
   });
 });
@@ -300,7 +307,7 @@ const loadTossPaymentsSDK = () => {
 
 const fetchUserInfo = async () => {
   try {
-    const { data } = await api.get('/users/my');
+    const {data} = await api.get('/users/my');
     user.value = data.data;
   } catch (error) {
     handleApiError(error, 'fetchUserInfo');
@@ -309,7 +316,7 @@ const fetchUserInfo = async () => {
 
 const updateUser = async () => {
   try {
-    const { data } = await api.patch('/users/my', user.value);
+    const {data} = await api.patch('/users/my', user.value);
     alert('회원 정보가 수정되었습니다.');
     user.value = data.data;
   } catch (error) {
@@ -326,7 +333,7 @@ const updateUser = async () => {
 
 const fetchCoupons = async () => {
   try {
-    const { data } = await api.get('/coupons/my-coupon');
+    const {data} = await api.get('/coupons/my-coupon');
     coupons.value = data.data;
   } catch (error) {
     handleApiError(error, 'fetchCoupons');
@@ -336,8 +343,8 @@ const fetchCoupons = async () => {
 const fetchReservations = async () => {
   isLoading.value = true; // 로딩 표시 활성화
   try {
-    const { data } = await api.get('/reservations', {
-      params: { page: reservationPage.value , size: 5 },
+    const {data} = await api.get('/reservations', {
+      params: {page: reservationPage.value, size: 5},
     });
     reservations.value = data.data.content.map(reservation => ({
       reservationId: reservation.reservationId,
@@ -353,14 +360,14 @@ const fetchReservations = async () => {
     reservationTotalCount.value = data.data.totalElements;
   } catch (error) {
     handleApiError(error, 'fetchReservations');
-  }finally {
+  } finally {
     isLoading.value = false;
   }
 };
 
 const fetchPayments = async () => {
   try {
-    const { data } = await api.get('/payments/my-payment', {
+    const {data} = await api.get('/payments/my-payment', {
       params: {
         page: paymentPage.value - 1,
         size: 5,
@@ -467,7 +474,7 @@ const requestTossPayment = async (reservation) => {
   }
 };
 
-const handlePaymentSuccess = async (orderId, paymentKey, amount) => {
+const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
   let tossPayment = null;
 
   try {
@@ -529,7 +536,7 @@ const handlePaymentSuccess = async (orderId, paymentKey, amount) => {
     }
   } finally {
     if (route.path === '/mypage') {
-      router.replace({ query: {} });
+      router.replace({query: {}});
     }
   }
 };
@@ -615,10 +622,10 @@ const filteredPayments = computed(() => {
 });
 
 const sections = [
-  { value: 'user', label: '회원 정보' },
-  { value: 'coupons', label: '쿠폰' },
-  { value: 'reservations', label: '예매 내역' },
-  { value: 'payments', label: '결제 내역' }
+  {value: 'user', label: '회원 정보'},
+  {value: 'coupons', label: '쿠폰'},
+  {value: 'reservations', label: '예매 내역'},
+  {value: 'payments', label: '결제 내역'}
 ];
 </script>
 
