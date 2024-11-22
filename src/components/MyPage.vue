@@ -133,14 +133,14 @@
 </template>
 
 <script setup>
-import {ref, onMounted, watch, computed} from 'vue';
-import {useRouter, useRoute} from 'vue-router';
+import { ref, onMounted, watch, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 
 const router = useRouter();
 const route = useRoute();
 const activeSection = ref('user');
-const user = ref({nickname: '', password: '', id: ''});
+const user = ref({ nickname: '', password: '', id: '' });
 const coupons = ref([]);
 const reservations = ref([]);
 const payments = ref([]);
@@ -341,10 +341,11 @@ const fetchCoupons = async () => {
 };
 
 const fetchReservations = async () => {
-  isLoading.value = true; // 로딩 표시 활성화
+  isLoading.value = true;
   try {
-    const {data} = await api.get('/reservations', {
-      params: {page: reservationPage.value, size: 5},
+    const { data } = await api.get('/reservations', {
+      params: { page: reservationPage.value, size: 5 },
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
     });
     reservations.value = data.data.content.map(reservation => ({
       reservationId: reservation.reservationId,
@@ -367,12 +368,13 @@ const fetchReservations = async () => {
 
 const fetchPayments = async () => {
   try {
-    const {data} = await api.get('/payments/my-payment', {
+    const { data } = await api.get('/payments/my-payment', {
       params: {
         page: paymentPage.value - 1,
         size: 5,
         payStatus: paymentFilter.value === 'all' ? undefined : paymentFilter.value
       },
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
     });
     const paymentsWithTitles = await Promise.all(data.data.content.map(async (payment) => {
       const concertResponse = await api.get(`/concerts/${payment.concertId}`);
@@ -387,6 +389,7 @@ const fetchPayments = async () => {
     handleApiError(error, 'fetchPayments');
   }
 };
+
 
 const setPaymentFilter = (filter) => {
   paymentFilter.value = filter;
@@ -491,55 +494,37 @@ const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
     console.log('Payment success response:', response.data);
 
     if (tossPayment?.status === 'DONE') {
-      if (response.data.includes('error')) {
-        alert('결제는 완료되었으나 처리 중 문제가 발생했습니다. 고객센터에 문의해주세요.');
-      } else if (response.data.includes('success')) {
+      if (response.data.includes('success')) {
         alert('결제가 성공적으로 완료되었습니다.');
+        await refreshData();
+      } else if (response.data.includes('error')) {
+        alert('결제는 완료되었으나 처리 중 문제가 발생했습니다. 고객센터에 문의해주세요.');
       } else {
         throw new Error('알 수 없는 응답입니다.');
       }
-
-      activeSection.value = 'reservations';
-      await Promise.allSettled([
-        fetchReservations(),
-        fetchPayments()
-      ]);
     } else if (response.data.includes('new')) {
       alert('결제 가능 시간이 만료되었습니다. 다시 시도해주세요.');
     } else {
       throw new Error('결제가 정상적으로 처리되지 않았습니다.');
     }
 
+    activeSection.value = 'reservations';
   } catch (error) {
-    console.error('Payment error:', error);
-    let errorMessage;
-
-    if (!tossPayment) {
-      errorMessage = '결제 상태를 확인할 수 없습니다. 고객센터에 문의해주세요.';
-    } else if (error.response?.status === 401) {
-      errorMessage = '인증에 실패했습니다. 다시 로그인해주세요.';
-      router.push('/auth/login');
-    } else if (error.response?.status === 404) {
-      errorMessage = '결제 정보를 찾을 수 없습니다.';
-    } else if (error.message.includes('만료')) {
-      errorMessage = error.message;
-    } else {
-      errorMessage = '결제 처리 중 오류가 발생했습니다. 고객센터에 문의해주세요.';
-    }
-
     alert(errorMessage);
-
-    try {
-      await refreshReservations();
-    } catch (refreshError) {
-      console.error('예매 내역 갱신 실패:', refreshError);
-    }
   } finally {
     if (route.path === '/mypage') {
-      router.replace({query: {}});
+      router.replace({ query: {} });
     }
   }
 };
+
+const refreshData = async () => {
+  await Promise.all([
+    fetchReservations(),
+    fetchPayments()
+  ]);
+};
+
 
 const handlePaymentFail = async (error) => {
   try {
@@ -556,8 +541,7 @@ const handlePaymentFail = async (error) => {
       alert(`결제 실패: ${error.message}`);
     }
   } catch (error) {
-    console.error('결제 실패 처리 오류:', error);
-    alert('결제 실패 처리 중 오류가 발생했습니다.');
+
   } finally {
     await refreshReservations();
   }
@@ -590,7 +574,6 @@ const getPaymentStatusText = (status) => {
   };
   return statuses[status] || status;
 };
-
 const getPaymentStatusClass = (status) => {
   return {
     'status-paid': status === 'PAID',
@@ -602,11 +585,11 @@ const getReservationStatusText = (status) => {
   const statuses = {
     'PENDING': '결제 대기중',
     'CONFIRMED': '예약 완료',
-    'CANCELLED': '예약 취소'
+    'CANCELLED': '예약 취소',
+    'PAID': '결제 완료'
   };
   return statuses[status] || status;
 };
-
 const filteredReservations = computed(() => {
   if (reservationFilter.value === 'pending') {
     return reservations.value.filter(reservation => reservation.status === 'PENDING');
@@ -620,7 +603,27 @@ const filteredPayments = computed(() => {
   }
   return payments.value.filter(payment => payment.payStatus === paymentFilter.value);
 });
+onMounted(async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    router.push('/login');
+    return;
+  }
 
+  await fetchData(async () => {
+    await fetchUserInfo();
+    await loadTossPaymentsSDK();
+    await refreshData();
+
+    const { paymentKey, orderId, amount, code, message } = route.query;
+
+    if (paymentKey && orderId && amount) {
+      await handlePaymentSuccess(paymentKey, orderId, amount);
+    } else if (code && message && orderId) {
+      await handlePaymentFail({ code, message, orderId });
+    }
+  });
+});
 const sections = [
   {value: 'user', label: '회원 정보'},
   {value: 'coupons', label: '쿠폰'},
